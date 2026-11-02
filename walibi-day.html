@@ -192,15 +192,15 @@ a.btn { text-decoration: none; display: inline-flex; align-items: center; justif
 /* mapa interativo */
 .imap { position: relative; height: 46vh; min-height: 280px; max-height: 430px; border-radius: 14px; overflow: hidden; background: var(--surface2); border: 1px solid var(--line); touch-action: none; user-select: none; -webkit-user-select: none; flex: none; }
 .imap.big { height: 62vh; max-height: none; min-height: 320px; }
-.imap-tiles { position: absolute; inset: 0; overflow: hidden; }
+.imap-tiles { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
 .imap-tile { position: absolute; max-width: none; pointer-events: none; -webkit-user-drag: none; }
-.imap-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.imap-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
 .imap-svg text { font-family: var(--body); font-size: 11.5px; font-weight: 700; fill: #fff; stroke: rgba(0,0,0,.85); stroke-width: 3.2px; paint-order: stroke; stroke-linejoin: round; pointer-events: none; }
 .imap.plain .imap-svg text { fill: var(--ink); stroke: var(--surface); }
-.imap-ctl { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 6px; }
+.imap-ctl { z-index: 2; position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 6px; }
 .imap-ctl button { width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: grid; place-items: center; font-size: 22px; font-weight: 700; padding: 0; line-height: 1; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 .imap-ctl button svg { width: 20px; height: 20px; }
-.imap-attr { position: absolute; left: 8px; bottom: 4px; font-size: 10px; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
+.imap-attr { z-index: 2; position: absolute; left: 8px; bottom: 4px; font-size: 10px; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
 .imap.plain .imap-attr { color: var(--muted); text-shadow: none; }
 
 </style>
@@ -1106,7 +1106,7 @@ a.btn { text-decoration: none; display: inline-flex; align-items: center; justif
     var txt = ok ? 'GPS a receber dados (±' + Math.round(rt.gpsPos.acc || 0) + ' m, ' + (ag < 5 ? 'agora' : 'há ' + ag + ' s') + ')' :
       (rt.gps === 'far' ? 'GPS a funcionar: estás a ' + fmtKm(farKm()) + ' do parque (±' + Math.round(rt.gpsPos.acc || 0) + ' m, ' + gpsAgeTxt() + '). No mapa uso a entrada.' :
       (rt.gps === 'insecure' ? 'O Android abriu o ficheiro de forma que o Chrome bloqueia o GPS (' + location.protocol.replace(':','') + '). Abre no Chrome escrevendo na barra de endereço: file:///sdcard/Download/walibi-day.html — ou toca no mapa onde estás.' : rt.gps === 'denied' ? 'Localização bloqueada no Chrome: toca no cadeado/ícone à esquerda do endereço → Permissões → Localização → Permitir' + (rt.gpsMsg ? ' (' + rt.gpsMsg + ')' : '') : 'Sem dados do GPS: a posição mostrada pode estar errada'));
-    return '<div class="gpsbar ' + cls + '" role="status"><span id="gpsline" class="grow">' + esc(txt) + '</span>' + ((ok || farOk) ? '' : '<button class="btn sm" data-action="startGps">Ativar GPS</button><button class="btn sm" data-action="posSheet">Onde estou?</button>') + '</div>';
+    return '<div class="gpsbar ' + cls + '" role="status"><span id="gpsline" class="grow">' + esc(txt) + '</span>' + ((ok || farOk) ? '' : (rt.gps === 'insecure' || /^content:/.test(location.protocol) ? '<button class="btn sm" data-action="toFile">Abrir com GPS</button><button class="btn sm" data-action="copyFile">Copiar endereço</button>' : '') + '<button class="btn sm" data-action="startGps">Ativar GPS</button><button class="btn sm" data-action="posSheet">Onde estou?</button>') + '</div>';
   }
   function mapNext(p, nx, pos) {
     if (!nx) {
@@ -1221,6 +1221,7 @@ a.btn { text-decoration: none; display: inline-flex; align-items: center; justif
     var pos = curPos(), pts = [], far = rt.gps === 'far' && mapGpsFresh();
     if (far) { pts.push(rt.gpsPos, C.PARK.entrance); mapFitPts(pts, 18); return; }
     pts.push(pos); var pl = getPlan(), c = 0; for (var i = 0; i < pl.steps.length && c < 2; i++) if (pl.steps[i].type === 'ride') { pts.push(allRide(pl.steps[i].id)); c++; }
+    try { var nxr = mapNextRide(), rk = C.rankNow(Object.assign({}, pl.ctx, { mandatory: {} }), nxr ? [nxr.id] : []); if (rk[0]) pts.push(allRide(rk[0].r.id)); } catch (e) {}
     if (pts.length === 1) pts.push({ lat: pos.lat + 0.0012, lon: pos.lon + 0.0012 }, { lat: pos.lat - 0.0012, lon: pos.lon - 0.0012 });
     mapFitPts(pts, 17.4);
   }
@@ -1503,6 +1504,10 @@ a.btn { text-decoration: none; display: inline-flex; align-items: center; justif
       case 'mapZoom': rt.mv.auto = false; mapZoomAt(MAP.w / 2, MAP.h / 2, rt.mv.z + Number(el.getAttribute('data-d'))); break;
       case 'mapLocate': rt.mv.auto = true; mapUpdate(); if (!mapGpsFresh()) toast('Sem GPS: centrei na posição escolhida'); break;
       case 'mapPark': rt.mv.auto = false; mapFitPark(); mapPaint(); break;
+      case 'toFile': try { location.href = 'file:///storage/emulated/0/Download/'; } catch (e) {} setTimeout(function () { toast('O Chrome bloqueou. Usa "Copiar endereço" e cola na barra do Chrome.'); }, 1500); break;
+      case 'copyFile': (function () { var t = 'file:///storage/emulated/0/Download/'; var ok = function () { toast('Copiado! Cola na barra do Chrome e toca no walibi-day mais recente.'); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, function () { prompt('Copia este endereço:', t); });
+        else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) {} ta.remove(); } })(); break;
       case 'recalc': rt.fails = 0; invalidate(); render(); refreshLive(true); toast('Rota recalculada'); break;
       case 'startGps': startGPS(); toast('A pedir localização…'); setTimeout(function () { if (rt.sheet === 'pos') sheetPos(); render(); }, 1200); break;
       case 'filter': S.ui.filter = el.getAttribute('data-v'); save(); render(); break;
