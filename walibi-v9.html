@@ -1,0 +1,1580 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4b36c9">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}[hidden]{display:none!important}</style>
+<title>Walibi Day</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: app de uma só ecrã. Cabeçalho com hora e estado dos dados, conteúdo que desliza, barra de separadores em baixo (polegar). */
+:root {
+  --bg: #edf0f2; --surface: #ffffff; --surface2: #e3e8ec; --ink: #121b24; --muted: #566573; --line: #cfd7de;
+  --accent: #4b36c9; --accent-ink: #ffffff; --accent-soft: #e6e2fb;
+  --good: #17803f; --good-soft: #dcf2e3; --warn: #9a5700; --warn-soft: #fbebcf; --bad: #bf2f27; --bad-soft: #fbdedb;
+  --display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e141b; --surface: #17202a; --surface2: #202c38; --ink: #e9eef3; --muted: #9aabb9; --line: #2b3946;
+    --accent: #a99bff; --accent-ink: #14102e; --accent-soft: #272148;
+    --good: #5ad188; --good-soft: #12301f; --warn: #f0b24a; --warn-soft: #3a2a0c; --bad: #ff8a80; --bad-soft: #3d1a17;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e141b; --surface: #17202a; --surface2: #202c38; --ink: #e9eef3; --muted: #9aabb9; --line: #2b3946;
+  --accent: #a99bff; --accent-ink: #14102e; --accent-soft: #272148;
+  --good: #5ad188; --good-soft: #12301f; --warn: #f0b24a; --warn-soft: #3a2a0c; --bad: #ff8a80; --bad-soft: #3d1a17;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.4;
+  display: flex; flex-direction: column; overflow: hidden;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-text-size-adjust: 100%;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3, p { margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* cabeçalho */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-block: 10px 8px; flex: none; }
+.clock b { font-family: var(--display); font-size: 26px; font-weight: 700; line-height: 1; letter-spacing: .01em; }
+.clock span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 600; max-width: 100%; }
+.top .chip { white-space: nowrap; flex: none; }
+.clock { min-width: 0; }
+.clock span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip svg { width: 15px; height: 15px; flex: none; }
+.chip.good { background: var(--good-soft); color: var(--good); border-color: transparent; }
+.chip.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.chip.bad { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+.chip.acc { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.chip.plain { min-height: 26px; padding: 1px 9px; font-size: 12.5px; font-weight: 600; }
+.spin svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* conteúdo */
+#view > * { flex: none; }
+#view { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-block: 4px 16px; display: flex; flex-direction: column; gap: 14px; scrollbar-width: thin; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; min-width: 0; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.sec-title { font-family: var(--display); font-size: 20px; font-weight: 700; }
+.row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.row.wrap { flex-wrap: wrap; }
+.grow { flex: 1 1 auto; min-width: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13.5px; }
+
+/* próxima atração */
+.next { display: flex; flex-direction: column; gap: 12px; border-color: var(--accent); border-width: 2px; }
+.next h1 { font-family: var(--display); font-size: 34px; line-height: 1.02; font-weight: 700; text-wrap: balance; overflow-wrap: anywhere; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stat { background: var(--surface2); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.stat small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat b { font-family: var(--display); font-size: 26px; line-height: 1.1; font-weight: 700; }
+.stat b i { font-style: normal; font-size: 14px; font-weight: 600; color: var(--muted); margin-left: 2px; }
+.stat.good b { color: var(--good); } .stat.warn b { color: var(--warn); } .stat.bad b { color: var(--bad); }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn { min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-weight: 700; padding: 8px 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
+.btn svg { width: 18px; height: 18px; flex: none; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.ghost { background: transparent; }
+.btn.full { grid-column: 1 / -1; }
+.btn.sm { min-height: 40px; font-size: 14px; padding: 6px 12px; }
+.btn[disabled] { opacity: .5; cursor: default; }
+
+/* aviso (conselho) */
+.advice { border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; }
+.advice.defer, .advice.switch, .advice.closed { background: var(--warn-soft); color: var(--ink); border: 1px solid var(--warn); }
+.advice.wait { background: var(--accent-soft); border: 1px solid var(--accent); }
+.advice.go { background: var(--good-soft); border: 1px solid var(--good); }
+.advice b.t { font-family: var(--display); font-size: 17px; }
+
+/* listas */
+.list { display: flex; flex-direction: column; }
+.item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); min-width: 0; width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; border-bottom: 0; color: inherit; }
+.item:first-child { border-top: 0; }
+.item .nm { font-weight: 700; overflow-wrap: anywhere; }
+.item .sub { font-size: 13px; color: var(--muted); }
+.badge { flex: none; width: 54px; text-align: center; border-radius: 10px; padding: 5px 0 4px; font-family: var(--display); line-height: 1; }
+.badge b { display: block; font-size: 24px; font-weight: 700; }
+.badge small { font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.badge.good { background: var(--good-soft); color: var(--good); } .badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.bad { background: var(--bad-soft); color: var(--bad); } .badge.none { background: var(--surface2); color: var(--muted); }
+.time { flex: none; width: 52px; font-family: var(--display); font-weight: 700; font-size: 18px; line-height: 1.1; }
+.time small { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.tick { flex: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; }
+.tick svg { width: 20px; height: 20px; }
+.tick.on { background: var(--good-soft); color: var(--good); border-color: transparent; }
+.is-done .nm { text-decoration: line-through; color: var(--muted); }
+.seg { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.seg::-webkit-scrollbar { display: none; }
+.seg button { flex: none; min-height: 38px; padding: 4px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 14px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.sumrow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+details { border-radius: var(--radius); }
+details > summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.breakrow { background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; font-weight: 600; }
+
+/* definições */
+.field { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding-block: 4px; border-top: 1px solid var(--line); }
+.field:first-of-type { border-top: 0; }
+.field label, .field .lab { min-width: 0; flex: 1 1 auto; }
+.field .hint { display: block; font-size: 12.5px; color: var(--muted); }
+input[type="number"], input[type="time"], select, textarea { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); padding: 6px 10px; max-width: 100%; }
+input[type="number"] { width: 84px; text-align: center; }
+input[type="time"] { width: 150px; }
+textarea { width: 100%; min-height: 120px; resize: vertical; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+.switch { position: relative; width: 52px; height: 32px; flex: none; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; width: 100%; height: 100%; cursor: pointer; }
+.switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--surface2); border: 1px solid var(--line); transition: background .15s; pointer-events: none; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
+.switch input:checked + span { background: var(--accent); border-color: var(--accent); }
+.switch input:checked + span::after { transform: translateX(20px); background: var(--accent-ink); }
+.switch input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.person { display: flex; align-items: center; gap: 8px; padding-block: 4px; border-top: 1px solid var(--line); }
+.person:first-of-type { border-top: 0; }
+.kid { border-top: 1px solid var(--line); padding-block: 8px; display: grid; gap: 8px; }
+.kid:first-of-type { border-top: 0; }
+.kid .l1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kid .l2 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.kid label { color: var(--muted); font-size: 14px; }
+
+/* barra de separadores */
+.tabs { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; padding-block: 6px 4px; border-top: 1px solid var(--line); margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: 6px; background: var(--bg); }
+.tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 54px; border: 0; background: none; border-radius: 12px; font-size: 12px; font-weight: 700; color: var(--muted); min-width: 0; }
+.tabs button svg { width: 24px; height: 24px; }
+.tabs button[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); }
+
+/* sheet */
+.sheet { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
+.sheet-backdrop { position: absolute; inset: 0; background: rgba(8, 12, 18, .55); }
+.sheet-panel { position: relative; width: 100%; max-width: 560px; max-height: 88%; display: flex; flex-direction: column; background: var(--surface); border-radius: 18px 18px 0 0; border: 1px solid var(--line); border-bottom: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-block: 12px 6px; }
+.sheet-head h2 { font-family: var(--display); font-size: 24px; line-height: 1.1; overflow-wrap: anywhere; }
+.sheet-body { overflow-y: auto; padding-block: 4px 18px; display: flex; flex-direction: column; gap: 12px; }
+.x { width: 44px; height: 44px; border-radius: 12px; border: 0; background: var(--surface2); font-size: 22px; line-height: 1; flex: none; }
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 40; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 600; font-size: 14px; max-width: calc(100% - 32px); text-align: center; }
+
+/* mapa */
+.mapbox { padding: 8px; }
+.mapbox svg { width: 100%; height: auto; display: block; max-height: 52vh; }
+.mapbox text { font-family: var(--body); font-size: 10.5px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12.5px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.pulse { animation: pulse 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pulse { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.2); opacity: 0; } }
+.bars rect { transition: none; }
+@media (prefers-reduced-motion: reduce) { .pulse, .spin svg { animation: none; } }
+@media (max-width: 360px) { .next h1 { font-size: 30px; } .stat b { font-size: 23px; } }
+
+.mapbox.sat text { fill: #fff; stroke: rgba(0,0,0,.8); stroke-width: 3.2px; }
+.mapbox.sat circle[r="8"] { stroke: #fff; }
+.gpsbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; }
+.gpsbar.good { background: color-mix(in srgb, var(--good) 16%, var(--surface)); color: var(--good); }
+.gpsbar.warn { background: color-mix(in srgb, var(--warn) 16%, var(--surface)); color: var(--warn); }
+.gpsbar.bad { background: color-mix(in srgb, var(--bad) 16%, var(--surface)); color: var(--bad); }
+a.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+
+/* mapa interativo */
+.imap { position: relative; height: 46vh; min-height: 280px; max-height: 430px; border-radius: 14px; overflow: hidden; background: var(--surface2); border: 1px solid var(--line); touch-action: none; user-select: none; -webkit-user-select: none; flex: none; }
+.imap.big { height: 62vh; max-height: none; min-height: 320px; }
+.imap-tiles { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
+.imap-tile { position: absolute; max-width: none; pointer-events: none; -webkit-user-drag: none; }
+.imap-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+.imap-svg text { font-family: var(--body); font-size: 11.5px; font-weight: 700; fill: #fff; stroke: rgba(0,0,0,.85); stroke-width: 3.2px; paint-order: stroke; stroke-linejoin: round; pointer-events: none; }
+.imap.plain .imap-svg text { fill: var(--ink); stroke: var(--surface); }
+.imap-ctl { z-index: 2; position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 6px; }
+.imap-ctl button { width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: grid; place-items: center; font-size: 22px; font-weight: 700; padding: 0; line-height: 1; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.imap-ctl button svg { width: 20px; height: 20px; }
+.imap-attr { z-index: 2; position: absolute; left: 8px; bottom: 4px; font-size: 10px; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
+.imap.plain .imap-attr { color: var(--muted); text-shadow: none; }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="clock"><b id="clock" class="num">--:--</b><span id="parkstate"></span></div>
+  <button id="datachip" class="chip" type="button" aria-label="Estado das filas e dados"></button>
+</header>
+<main id="view" aria-live="polite"></main>
+<nav class="tabs" aria-label="Secções">
+  <button type="button" data-action="tab" data-tab="now" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 17-7-4-7 4z"/></svg>Agora</button>
+  <button type="button" data-action="tab" data-tab="plan" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>Plano</button>
+  <button type="button" data-action="tab" data-tab="rides" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c3-9 5-12 7-12s2 6 4 6 4-3 7-3"/><path d="M3 21h18"/></svg>Atrações</button>
+  <button type="button" data-action="tab" data-tab="map" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Mapa</button>
+  <button type="button" data-action="tab" data-tab="set" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Ajustes</button>
+</nav>
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-backdrop" data-action="closeSheet"></div>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-head"><h2 id="sheetTitle"></h2><button class="x" type="button" data-action="closeSheet" aria-label="Fechar">&times;</button></div>
+    <div id="sheetBody" class="sheet-body"></div>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<script>
+/* Walibi Day - motor de lógica (sem DOM). Funciona no browser (window.WCore) e em Node. */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.WCore = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var PARK = {
+    name: 'Walibi Belgium',
+    entrance: { lat: 50.7031, lon: 4.5924 },
+    open: 600,   // 10:00
+    close: 1320, // 22:00 (nocturne)
+    qtUrl: 'https://queue-times.com/parks/14/queue_times.json'
+  };
+
+  /* Alturas: tabela oficial walibi.be (cm). alone = sozinho, acc = acompanhado por adulto, max = máximo.
+     base/peak: médias de espera (min) do queue-times em dias de Halloween/nocturnes.
+     lat/lon: posições APROXIMADAS (approx:true) exceto as âncoras da Wikipedia. */
+  var RIDES = [
+    { id: 'kondaa', name: 'Kondaa', zone: 'Exotic World', lat: 50.69771, lon: 4.58499, anchor: true, dur: 4, value: 10, must: true, thrill: 3, wet: false, h: { alone: 130, acc: null, max: 195 }, base: 38, peak: 88, keys: ['kondaa'] },
+    { id: 'mecalodon', name: 'Mecalodon', zone: 'Dock World', lat: 50.7034, lon: 4.5931, anchor: true, dur: 4, value: 9, must: true, thrill: 2, wet: false, h: { alone: 120, acc: 100, max: null }, base: 28, peak: 60, keys: ['mecalodon', 'megalodon'] },
+    { id: 'pulsar', name: 'Pulsar', zone: 'Dock World', lat: 50.6988, lon: 4.5903, anchor: true, dur: 3, value: 9, must: true, thrill: 3, wet: true, h: { alone: 120, acc: null, max: null }, base: 26, peak: 57, keys: ['pulsar'] },
+    { id: 'tiki', name: 'Tiki-Waka', zone: 'Exotic World', lat: 50.6979, lon: 4.5856, dur: 4, value: 8, must: true, thrill: 2, wet: false, h: { alone: 120, acc: 100, max: null }, base: 40, peak: 80, keys: ['tikiwaka', 'tiki'] },
+    { id: 'tutankhamon', name: 'Challenge of Tutankhamon', short: 'Tutankhamon', zone: 'Exotic World', lat: 50.6974, lon: 4.5846, dur: 8, value: 7, must: true, thrill: 1, wet: false, h: { alone: 120, acc: 80, max: null }, base: 26, peak: 51, keys: ['challengeoftutankhamon', 'tutankhamon', 'tutankamon', 'tutankhamun'] },
+    { id: 'vampire', name: 'Vampire', zone: 'Adventure World', lat: 50.6966, lon: 4.5922, dur: 4, value: 7, must: true, thrill: 3, wet: false, h: { alone: 130, acc: null, max: 195 }, base: 35, peak: 71, keys: ['vampire'] },
+    { id: 'cobra', name: 'Cobra', zone: 'Karma World', lat: 50.6993, lon: 4.5912, dur: 3, value: 6, must: false, thrill: 3, wet: false, h: { alone: 130, acc: null, max: null }, base: 32, peak: 68, keys: ['cobra'] },
+    { id: 'turbine', name: 'Turbine', zone: 'Dock World', lat: 50.7030, lon: 4.5928, dur: 3, value: 6, must: false, thrill: 3, wet: false, h: { alone: 140, acc: 130, max: null }, base: 28, peak: 57, keys: ['turbine'] },
+    { id: 'dalton', name: 'Dalton Terror', zone: 'Adventure World', lat: 50.6970, lon: 4.5908, dur: 3, value: 6, must: false, thrill: 3, wet: false, h: { alone: 120, acc: null, max: 195 }, base: 15, peak: 38, keys: ['daltonterror', 'dalton'] },
+    { id: 'radja', name: 'Radja River', zone: 'Karma World', lat: 50.6996, lon: 4.5893, dur: 6, value: 6, must: false, thrill: 1, wet: true, h: { alone: 140, acc: 105, max: null }, base: 20, peak: 41, keys: ['radjariver', 'radja'] },
+    { id: 'calamity', name: 'Calamity Mine', zone: 'Adventure World', lat: 50.6985, lon: 4.5880, dur: 5, value: 5, must: false, thrill: 2, wet: false, h: { alone: 120, acc: 100, max: null }, base: 20, peak: 40, keys: ['calamitymine', 'calamity'] },
+    { id: 'flashback', name: 'Flash Back', zone: 'Dock World', lat: 50.7022, lon: 4.5918, dur: 6, value: 5, must: false, thrill: 1, wet: true, h: { alone: 120, acc: 90, max: null }, base: 15, peak: 37, keys: ['flashback'] },
+    { id: 'popcorn', name: 'Popcorn Revenge', zone: 'Karma World', lat: 50.7013, lon: 4.5921, dur: 8, value: 5, must: false, thrill: 1, wet: false, h: { alone: 90, acc: 50, max: null }, base: 14, peak: 49, keys: ['popcornrevenge', 'popcorn'] },
+    { id: 'funpilot', name: 'Fun Pilot', zone: 'Fun World', lat: 50.7010, lon: 4.5930, dur: 3, value: 4, must: false, thrill: 1, wet: false, h: { alone: 120, acc: 90, max: null }, base: 12, peak: 24, keys: ['funpilot'] },
+    { id: 'palais', name: 'Palais du Génie', zone: 'Karma World', lat: 50.7003, lon: 4.5908, dur: 8, value: 3, must: false, thrill: 1, wet: false, h: { alone: 120, acc: 105, max: null }, base: 8, peak: 21, keys: ['palaisdugenie', 'palaisgenie', 'genie'] },
+    { id: 'loupgarou', name: 'Loup-Garou', zone: 'Loup-Garou Zone', lat: 50.6978, lon: 4.5890, dur: 4, value: 5, must: false, thrill: 3, wet: false, h: { alone: 120, acc: null, max: null }, base: 30, peak: 50, keys: ['loupgarou', 'werewolf'] }
+  ];
+  RIDES.forEach(function (r) { r.short = r.short || r.name; });
+
+  /* Outras atrações oficiais (sem fila medida): só informação de altura. */
+  var OTHERS = [
+    { name: 'Spinning Vibe', h: { alone: 120 } }, { name: 'Silverton', h: { alone: 130, acc: 90 } },
+    { name: 'Octopus', h: { alone: 120, acc: 105 } }, { name: 'Tapis Volant', h: { alone: 120, acc: 90 } },
+    { name: 'Wave Swinger', h: { alone: 120, acc: 105 } }, { name: 'Tiki-Trail', h: { alone: 120, acc: 90 } },
+    { name: 'Tous en Boîte', h: { alone: 120, acc: 90 } }, { name: 'Buzzsaw', h: { alone: 140, max: 195 } },
+    { name: 'Melody Road', h: { alone: 120, acc: 50 } }, { name: 'Grand Carrousel', h: { alone: 105, acc: 50 } },
+    { name: 'Cinéma 4D', h: { alone: 120, acc: 90 } }
+  ];
+
+  var RIDE_BY_ID = {};
+  RIDES.forEach(function (r) { RIDE_BY_ID[r.id] = r; });
+
+  /* ---------- util ---------- */
+  function norm(s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function fmtTime(min) {
+    min = Math.round(min);
+    var d = Math.floor(min / 1440); if (d) min -= d * 1440;
+    return pad(Math.floor(min / 60)) + ':' + pad(min % 60);
+  }
+  function parseHM(s, fallback) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '').trim());
+    if (!m) return fallback;
+    var v = +m[1] * 60 + +m[2];
+    return v >= 0 && v < 1440 ? v : fallback;
+  }
+  function meters(a, b) {
+    var R = 6371000, toR = Math.PI / 180;
+    var dLat = (b.lat - a.lat) * toR, dLon = (b.lon - a.lon) * toR;
+    var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * toR) * Math.cos(b.lat * toR) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+  }
+  function walkMin(a, b, speedKmh) {
+    var sp = (speedKmh || 3.6) * 1000 / 60; // m/min
+    var m = meters(a, b) * 1.3; // desvios dos caminhos
+    return Math.max(1, Math.round(m / sp));
+  }
+
+  /* ---------- perfil horário de esperas ---------- */
+  var SHAPE = { 10: .55, 11: .8, 12: 1, 13: 1.15, 14: 1.25, 15: 1.25, 16: 1.15, 17: 1, 18: .9, 19: .85, 20: .8, 21: .65, 22: .5 };
+  function rawShape(min) {
+    var h = Math.min(22, Math.max(10, min / 60));
+    var lo = Math.floor(h), hi = Math.min(22, lo + 1), f = h - lo;
+    return SHAPE[lo] * (1 - f) + SHAPE[hi] * f;
+  }
+  var SHAPE_MEAN = (function () { var s = 0, n = 0; for (var m = 600; m < 1320; m += 10) { s += rawShape(m); n++; } return s / n; })();
+  function histWait(r, tMin) { return Math.max(0, r.base * rawShape(tMin) / SHAPE_MEAN); }
+
+  /* ---------- dados ao vivo (queue-times) ---------- */
+  function matchRide(name) {
+    var n = norm(name);
+    if (!n || n.indexOf('archived') === 0) return null;
+    for (var i = 0; i < RIDES.length; i++) {
+      var r = RIDES[i];
+      for (var k = 0; k < r.keys.length; k++) { if (n === r.keys[k]) return r; }
+    }
+    for (var j = 0; j < RIDES.length; j++) {
+      var q = RIDES[j];
+      for (var m = 0; m < q.keys.length; m++) { if (q.keys[m].length >= 5 && n.indexOf(q.keys[m]) >= 0) return q; }
+    }
+    return null;
+  }
+  /* devolve { rides:{id:{wait,open,updated}}, total, matched } ou null se o formato não for válido */
+  function parseQueueTimes(data) {
+    if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { return null; } }
+    if (!data || typeof data !== 'object') return null;
+    var list = [];
+    if (Array.isArray(data.lands)) data.lands.forEach(function (l) { (l.rides || []).forEach(function (x) { list.push(x); }); });
+    if (Array.isArray(data.rides)) data.rides.forEach(function (x) { list.push(x); });
+    if (!list.length) return null;
+    var out = {}, matched = 0;
+    list.forEach(function (x) {
+      var r = matchRide(x && x.name);
+      if (!r) return;
+      var w = typeof x.wait_time === 'number' ? x.wait_time : parseInt(x.wait_time, 10);
+      if (isNaN(w)) w = 0;
+      out[r.id] = { wait: Math.max(0, w), open: x.is_open !== false, updated: x.last_updated || null };
+      matched++;
+    });
+    if (!matched) return null;
+    return { rides: out, total: list.length, matched: matched };
+  }
+
+  /* ---------- previsão ---------- */
+  function medianOf(a) { a = a.slice().sort(function (x, y) { return x - y; }); var n = a.length; return n % 2 ? a[(n - 1) / 2] : (a[n / 2 - 1] + a[n / 2]) / 2; }
+  /* fator do dia: o quanto hoje está acima/abaixo do normal, a partir das filas ao vivo */
+  function dayFactor(live, nowMin) {
+    var ratios = [];
+    RIDES.forEach(function (r) {
+      var L = live[r.id];
+      if (!L || L.open === false || r.retired) return;
+      if (L.age != null && L.age > 45) return;
+      var h = histWait(r, nowMin);
+      if (h < 8) return;
+      ratios.push(L.wait / h);
+    });
+    if (ratios.length < 3) return 1;
+    var m = Math.min(2.5, Math.max(0.4, medianOf(ratios)));
+    var shrink = Math.min(1, ratios.length / 8);
+    return 1 + (m - 1) * shrink;
+  }
+  /* env = { now, live:{id:{wait,open,age}}, dayFactor } */
+  function predictWait(r, tArr, env) {
+    var L = env.live && env.live[r.id];
+    if (L && L.open === false) return Infinity;
+    var hist = histWait(r, tArr) * (env.dayFactor || 1);
+    if (L && L.age != null && L.age <= 120) {
+      var dt = Math.max(0, tArr - env.now) + L.age;
+      var w = Math.exp(-dt / 40);
+      return Math.max(0, Math.round(L.wait * w + hist * (1 - w)));
+    }
+    return Math.round(hist);
+  }
+
+  /* ---------- elegibilidade (alturas) ---------- */
+  function personStatus(H, h, escortAvail) {
+    if (H.max && h > H.max) return 'tall';
+    if (h >= H.alone) return 'ok';
+    if (H.acc != null && h >= H.acc) return escortAvail ? 'escort' : 'noescort';
+    return 'short';
+  }
+  /* party = { adults:[cm], kids:[{h,age}] } ; opts.swap = adultos fazem à vez */
+  function eligibility(ride, party, opts) {
+    var H = ride.h, swap = !opts || opts.swap !== false;
+    var A = party.adults.map(function (h) { return personStatus(H, h, true); });
+    var adultsOk = A.filter(function (s) { return s === 'ok'; }).length;
+    var kids = party.kids.map(function (k) { return { k: k, s: personStatus(H, k.h, adultsOk > 0) }; });
+    var needEsc = kids.filter(function (x) { return x.s === 'escort'; }).length;
+    if (needEsc > adultsOk) {
+      var extra = needEsc - adultsOk;
+      kids.forEach(function (x) { if (x.s === 'escort' && extra > 0) { x.s = 'noescort'; extra--; } });
+    }
+    var total = A.length + kids.length;
+    var kidsRide = kids.filter(function (x) { return x.s === 'ok' || x.s === 'escort'; }).length;
+    var kidsNo = kids.length - kidsRide;
+    var blocked = kids.filter(function (x) { return x.s !== 'ok' && x.s !== 'escort'; })[0];
+    var escorted = kids.filter(function (x) { return x.s === 'escort'; })[0];
+    var res = { mode: 'all', factor: 1, extra: 0, doubleCost: false, label: 'Toda a família', detail: '', adultsRide: adultsOk, kidsRide: kidsRide };
+
+    if (adultsOk === 0) {
+      res.mode = 'none'; res.factor = 0; res.label = 'Não pode';
+      res.detail = A.some(function (s) { return s === 'tall'; }) ? 'Os adultos ultrapassam a altura máxima (' + H.max + ' cm).' : 'Os adultos não cumprem a altura mínima.';
+      return res;
+    }
+    if (kidsNo > 0) {
+      var why = blocked ? (blocked.s === 'tall' ? 'Acima da altura máxima (' + H.max + ' cm).' :
+        'Miúdo (' + blocked.k.h + ' cm) precisa de ' + (H.acc != null ? H.acc + ' cm acompanhado' : H.alone + ' cm') + '.') : '';
+      if (adultsOk >= 2) {
+        res.mode = 'adults'; res.factor = (adultsOk + kidsRide) / total;
+        res.label = 'Só adultos (à vez)'; res.detail = why + ' Um adulto fica com o miúdo.';
+        if (swap) { res.extra = 4; res.dupRide = true; } else { res.doubleCost = true; }
+      } else {
+        res.mode = 'none'; res.factor = 0; res.label = 'Não pode';
+        res.detail = why + ' Só há um adulto que possa subir, o miúdo não pode ficar sozinho.';
+      }
+      return res;
+    }
+    if (adultsOk < A.length) {
+      res.mode = 'partial'; res.factor = (adultsOk + kidsRide) / total; res.label = 'Quase todos';
+      res.detail = 'Algum adulto ultrapassa a altura máxima (' + H.max + ' cm).';
+      return res;
+    }
+    if (escorted) { res.label = 'Todos (miúdo com adulto)'; res.detail = 'Miúdo (' + escorted.k.h + ' cm) sobe acompanhado: mínimo ' + H.acc + ' cm.'; }
+    return res;
+  }
+  /* custo de tempo de uma atração para o grupo, dada a fila prevista */
+  function rideCost(ride, e, wait) {
+    var d = ride.dur;
+    if (e.doubleCost) return 2 * (wait + d);
+    if (e.dupRide) return wait + 2 * d + e.extra;
+    return wait + d;
+  }
+  /* ordem de fama/procura (queue-times + destaque do parque); as 6 primeiras são as imperdíveis */
+  var FAME = ['kondaa', 'mecalodon', 'pulsar', 'tiki', 'vampire', 'tutankhamon', 'cobra', 'turbine', 'dalton', 'radja'];
+  var REPEAT_FACTOR = [1, 0.4, 0.15, 0.1];
+  /* só as grandes atrações (valor >= 7) podem ser repetidas, e nunca logo a seguir */
+  function maxRepeats(r, opts) { return opts && opts.repeats && r.value >= 7 ? 2 : 1; }
+  function rideGain(ride, e, cnt, o) {
+    var g = ride.value * e.factor * REPEAT_FACTOR[Math.min(cnt, 3)];
+    if (ride.must && cnt === 0) g *= 1.15; /* famosas e procuradas: só se vai um dia */
+    if (ride.wet && o.avoidWet) g *= 0.45;
+    if (o.mandatory && o.mandatory[ride.id] && cnt === 0) g += 60;
+    return g;
+  }
+
+  /* ---------- planeador (beam search) ---------- */
+  /* ctx: { party, opts:{swap,avoidWet,repeats,speed}, env, pos, t, end, done:{id:n}, rides?, mandatory:{id:true},
+            onlyMandatory, brk:{enabled,start,len,taken}, target, order:[ids] (ordem fixa) } */
+  function buildCtxRides(ctx) {
+    return (ctx.rides || RIDES).filter(function (r) { return !r.retired; });
+  }
+  function expandRide(ctx, st, r, e, eMap) {
+    var cnt = st.counts[r.id] || 0;
+    var maxCnt = ctx.onlyMandatory ? 1 : maxRepeats(r, ctx.opts);
+    if (cnt >= maxCnt || st.last === r.id) return null;
+    var walk = st.last === r.id ? 0 : walkMin(st.pos, r, ctx.opts.speed);
+    var tArr = st.t + walk;
+    var wait = predictWait(r, tArr, ctx.env);
+    if (!isFinite(wait)) return null;
+    var cost = rideCost(r, e, wait);
+    var end = tArr + cost;
+    if (end > ctx.end) return null;
+    var gain = rideGain(r, e, cnt, { avoidWet: ctx.opts.avoidWet, mandatory: ctx.mandatory });
+    return { r: r, walk: walk, tArr: tArr, wait: wait, end: end, gain: gain, cnt: cnt, e: e };
+  }
+  function makeStep(c) {
+    return { type: 'ride', id: c.r.id, name: c.r.name, walk: c.walk, arrive: c.tArr, wait: c.wait, start: c.tArr + c.wait, end: c.end,
+      mode: c.e.mode, label: c.e.label, gain: c.gain, repeat: c.cnt > 0 };
+  }
+  function plan(ctx) {
+    var rides = buildCtxRides(ctx);
+    var eMap = {};
+    rides.forEach(function (r) { eMap[r.id] = eligibility(r, ctx.party, ctx.opts); });
+    var usable = rides.filter(function (r) {
+      if (eMap[r.id].mode === 'none') return false;
+      if (ctx.onlyMandatory && !(ctx.mandatory && ctx.mandatory[r.id])) return false;
+      return true;
+    });
+    var brk = ctx.brk || { enabled: false };
+    var LAMBDA = 0.22, WIDTH = 150, KIDS = 11, MAXD = 40;
+    var counts0 = {};
+    Object.keys(ctx.done || {}).forEach(function (k) { counts0[k] = ctx.done[k]; });
+    var start = { pos: ctx.pos, t: ctx.t, last: null, counts: counts0, value: 0, steps: [], breakTaken: !brk.enabled || !!brk.taken };
+    var beam = [start], best = start;
+
+    for (var depth = 0; depth < MAXD && beam.length; depth++) {
+      var next = [], seen = {};
+      for (var bi = 0; bi < beam.length; bi++) {
+        var st = beam[bi];
+        var kids = [];
+        if (!st.breakTaken && st.t >= brk.start) {
+          if (st.t + brk.len <= ctx.end + 30) {
+            kids.push({ type: 'break', pos: st.pos, t: st.t + brk.len, last: st.last, counts: st.counts, value: st.value,
+              steps: st.steps.concat([{ type: 'break', start: st.t, end: st.t + brk.len, label: 'Pausa para comer' }]), breakTaken: true });
+          }
+        } else {
+          var cs = [];
+          for (var i = 0; i < usable.length; i++) {
+            var r = usable[i];
+            if (depth === 0 && ctx.target && r.id !== ctx.target) continue;
+            var c = expandRide(ctx, st, r, eMap[r.id], eMap);
+            if (c) cs.push(c);
+          }
+          cs.forEach(function (c) { c.local = c.gain / Math.max(4, c.end - st.t); });
+          cs.sort(function (a, b) { return b.local - a.local; });
+          cs.slice(0, KIDS).forEach(function (c) {
+            var counts = {}; for (var k in st.counts) counts[k] = st.counts[k];
+            counts[c.r.id] = (counts[c.r.id] || 0) + 1;
+            kids.push({ pos: { lat: c.r.lat, lon: c.r.lon }, t: c.end, last: c.r.id, counts: counts, value: st.value + c.gain,
+              steps: st.steps.concat([makeStep(c)]), breakTaken: st.breakTaken });
+          });
+        }
+        kids.forEach(function (k) {
+          k.rank = k.value - LAMBDA * (k.t - ctx.t);
+          var key = k.last + '|' + Object.keys(k.counts).sort().map(function (x) { return x + k.counts[x]; }).join(',') + '|' + (k.breakTaken ? 1 : 0) + '|' + Math.round(k.t / 6);
+          if (!seen[key] || seen[key].rank < k.rank) seen[key] = k;
+        });
+      }
+      Object.keys(seen).forEach(function (k) { next.push(seen[k]); });
+      next.sort(function (a, b) { return b.rank - a.rank; });
+      beam = next.slice(0, WIDTH);
+      beam.forEach(function (s) { if (s.value > best.value + 1e-9 || (Math.abs(s.value - best.value) < 1e-9 && s.t < best.t)) best = s; });
+    }
+    return summarize(best.steps, ctx, eMap);
+  }
+  function summarize(steps, ctx, eMap) {
+    var wait = 0, walk = 0, rides = 0, endT = ctx.t;
+    steps.forEach(function (s) { if (s.type === 'ride') { wait += s.wait; walk += s.walk; rides++; } endT = Math.max(endT, s.end); });
+    return { steps: steps, totalWait: wait, totalWalk: walk, rideCount: rides, endT: endT, elig: eMap };
+  }
+  /* ordem fixa (lista importada): simula pela ordem dada; ignora o que não se pode fazer */
+  function simulateOrder(ctx, ids) {
+    var rides = buildCtxRides(ctx), byId = {};
+    rides.forEach(function (r) { byId[r.id] = r; });
+    var eMap = {}; rides.forEach(function (r) { eMap[r.id] = eligibility(r, ctx.party, ctx.opts); });
+    var brk = ctx.brk || { enabled: false };
+    var pos = ctx.pos, t = ctx.t, last = null, steps = [], skipped = [], breakTaken = !brk.enabled || !!brk.taken, counts = {};
+    ids.forEach(function (id) {
+      var r = byId[id];
+      if (!r) { skipped.push({ id: id, why: 'Atração fechada definitivamente.' }); return; }
+      var e = eMap[id];
+      if (e.mode === 'none') { skipped.push({ id: id, why: e.detail || 'Não podem subir.' }); return; }
+      if (!breakTaken && t >= brk.start) { steps.push({ type: 'break', start: t, end: t + brk.len, label: 'Pausa para comer' }); t += brk.len; breakTaken = true; }
+      var walk = last === id ? 0 : walkMin(pos, r, ctx.opts.speed);
+      var tArr = t + walk, wait = predictWait(r, tArr, ctx.env);
+      if (!isFinite(wait)) { skipped.push({ id: id, why: 'Fechada neste momento.' }); return; }
+      var cnt = counts[id] || 0;
+      var c = { r: r, walk: walk, tArr: tArr, wait: wait, end: tArr + rideCost(r, e, wait), gain: rideGain(r, e, cnt, { avoidWet: ctx.opts.avoidWet }), cnt: cnt, e: e };
+      var s = makeStep(c); s.late = c.end > ctx.end; steps.push(s);
+      counts[id] = cnt + 1; pos = { lat: r.lat, lon: r.lon }; t = c.end; last = id;
+    });
+    var out = summarize(steps, ctx, eMap); out.skipped = skipped; return out;
+  }
+
+  /* melhores opções agora (para o ecrã "Agora" e para alternativas) */
+  function rankNow(ctx, excludeIds) {
+    var out = [];
+    buildCtxRides(ctx).forEach(function (r) {
+      if (excludeIds && excludeIds.indexOf(r.id) >= 0) return;
+      var e = eligibility(r, ctx.party, ctx.opts);
+      if (e.mode === 'none') return;
+      var cnt = (ctx.done && ctx.done[r.id]) || 0;
+      if (cnt >= maxRepeats(r, ctx.opts)) return;
+      var walk = walkMin(ctx.pos, r, ctx.opts.speed);
+      var wait = predictWait(r, ctx.t + walk, ctx.env);
+      if (!isFinite(wait)) return;
+      var total = walk + rideCost(r, e, wait);
+      if (ctx.t + total > ctx.end) return;
+      var gain = rideGain(r, e, cnt, { avoidWet: ctx.opts.avoidWet, mandatory: ctx.mandatory });
+      out.push({ r: r, e: e, walk: walk, wait: wait, total: total, gain: gain, eff: gain / Math.max(5, total) });
+    });
+    out.sort(function (a, b) { return b.eff - a.eff; });
+    return out;
+  }
+
+  /* conselho quando a fila da próxima atração está alta */
+  function advise(r, ctx, todayMin) {
+    var L = ctx.env.live && ctx.env.live[r.id];
+    if (L && L.open === false) {
+      var alts0 = rankNow(ctx, [r.id]).slice(0, 3);
+      return { level: 'closed', text: r.name + ' está fechada neste momento.', alts: alts0 };
+    }
+    var walk = walkMin(ctx.pos, r, ctx.opts.speed);
+    var tArr = ctx.t + walk;
+    var nowW = predictWait(r, tArr, ctx.env);
+    var typ = histWait(r, tArr);
+    var high = (nowW >= 25 && nowW >= 1.4 * typ + 3) || nowW >= 50;
+    if (!high) return { level: 'go', text: 'Fila normal para esta hora (cerca de ' + nowW + ' min).', nowW: nowW, typ: Math.round(typ) };
+    var alts = rankNow(ctx, [r.id]).slice(0, 3);
+    var later = null;
+    [15, 30, 45, 60, 90].forEach(function (dt) {
+      var f = Math.round(histWait(r, tArr + dt) * (ctx.env.dayFactor || 1));
+      if (tArr + dt + f + r.dur < ctx.end && (!later || f < later.wait)) later = { at: tArr + dt, wait: f, dt: dt };
+    });
+    var laterOk = later && later.wait <= 0.7 * nowW && nowW - later.wait >= 10;
+    var a1 = alts[0];
+    var altTxt = a1 ? a1.r.name + ' (' + a1.walk + ' min a pé, fila ~' + a1.wait + ' min)' : null;
+    var obs = (todayMin && todayMin.w < nowW - 8) ? ' Hoje já esteve a ' + todayMin.w + ' min às ' + fmtTime(todayMin.t) + '.' : '';
+    var head = L
+      ? 'Fila alta: ' + L.wait + ' min agora' + (Math.abs(nowW - L.wait) >= 5 ? ' (~' + nowW + ' quando chegares)' : '') + '; o normal a esta hora é ~' + Math.round(typ) + '.'
+      : 'Fila alta prevista: ~' + nowW + ' min (o normal a esta hora é ~' + Math.round(typ) + ').';
+    if (laterOk && (r.must || nowW >= 45) && a1) {
+      return { level: 'defer', text: head + ' Vai primeiro a ' + altTxt + ' e volta por volta das ' + fmtTime(later.at) + ', quando a previsão baixa para ~' + later.wait + ' min.' + obs, alts: alts, later: later, nowW: nowW, typ: Math.round(typ) };
+    }
+    if (r.must && nowW <= 40) {
+      return { level: 'wait', text: head + ' É das imperdíveis e só vão um dia: vale esperar.' + (altTxt ? ' Alternativa: ' + altTxt + '.' : '') + obs, alts: alts, nowW: nowW, typ: Math.round(typ) };
+    }
+    return { level: 'switch', text: head + (altTxt ? ' Recomendo ' + altTxt + ' agora.' : ' Considera fazer uma pausa e voltar mais tarde.') + obs, alts: alts, later: laterOk ? later : null, nowW: nowW, typ: Math.round(typ) };
+  }
+
+  /* ---------- lista importada ---------- */
+  var ALIASES = { kondaa: ['kondaa'], mecalodon: ['mecalodon', 'megalodon', 'mecalodom'], pulsar: ['pulsar'], tiki: ['tikiwaka', 'tiki', 'tikiwakka'],
+    tutankhamon: ['challengeoftutankhamon', 'tutankhamon', 'tutankamon', 'tutankhamun', 'tutankamon'], vampire: ['vampire', 'vampiro'], cobra: ['cobra'],
+    turbine: ['turbine', 'turbina'], dalton: ['daltonterror', 'dalton'], radja: ['radjariver', 'radja', 'rapidos'], calamity: ['calamitymine', 'calamity'],
+    flashback: ['flashback'], popcorn: ['popcornrevenge', 'popcorn'], funpilot: ['funpilot'], palais: ['palaisdugenie', 'palaisgenie', 'palais', 'genie'],
+    loupgarou: ['loupgarou', 'werewolf', 'lobisomem'] };
+  function parseList(text) {
+    var parts = String(text || '').split(/[\n\r,;|]+/);
+    var ids = [], unknown = [];
+    parts.forEach(function (p) {
+      var raw = p.replace(/^\s*(?:[-*•\d]+[.)]?\s*)/, '').trim();
+      if (!raw) return;
+      var n = norm(raw);
+      if (!n) return;
+      var hit = null;
+      Object.keys(ALIASES).forEach(function (id) { if (!hit && ALIASES[id].indexOf(n) >= 0) hit = id; });
+      if (!hit) Object.keys(ALIASES).forEach(function (id) { ALIASES[id].forEach(function (a) { if (!hit && a.length >= 4 && (n.indexOf(a) >= 0 || (n.length >= 4 && a.indexOf(n) === 0))) hit = id; }); });
+      if (hit) { if (ids.indexOf(hit) < 0) ids.push(hit); } else unknown.push(raw);
+    });
+    return { ids: ids, unknown: unknown };
+  }
+
+  return { PARK: PARK, FAME: FAME, RIDES: RIDES, OTHERS: OTHERS, RIDE_BY_ID: RIDE_BY_ID, norm: norm, fmtTime: fmtTime, parseHM: parseHM, meters: meters, walkMin: walkMin,
+    rawShape: rawShape, histWait: histWait, matchRide: matchRide, parseQueueTimes: parseQueueTimes, dayFactor: dayFactor, predictWait: predictWait,
+    personStatus: personStatus, eligibility: eligibility, rideCost: rideCost, plan: plan, simulateOrder: simulateOrder, rankNow: rankNow, advise: advise, parseList: parseList };
+});
+
+</script>
+<script>
+/* Walibi Day - interface */
+(function () {
+  'use strict';
+  var C = window.WCore;
+  var KEY = 'walibi-day-v1';
+  var DEF_SET = { adults: [175, 172], kids: [{ age: 8, h: 122 }], end: '21:30', breakOn: true, breakStart: '13:00', breakLen: 40, avoidWet: true, swap: true, repeats: true, speed: 3.6 };
+
+  /* ---------- estado ---------- */
+  function todayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function freshDay() { return { done: {}, log: [], skip: {}, manual: {}, target: null, breakTaken: false, samples: {}, live: null, pos: null }; }
+  function load() {
+    var s = null;
+    try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { s = null; }
+    if (!s || typeof s !== 'object') s = {};
+    s.set = Object.assign({}, DEF_SET, s.set || {});
+    if (!Array.isArray(s.set.adults) || !s.set.adults.length) s.set.adults = DEF_SET.adults.slice();
+    if (!Array.isArray(s.set.kids)) s.set.kids = [];
+    s.calib = s.calib || {};
+    s.imp = s.imp || { ids: [], keep: false, only: true };
+    s.ui = Object.assign({ tab: 'now', filter: 'all', sort: 'best' }, s.ui || {});
+    if (s.day !== todayKey()) { Object.assign(s, freshDay()); s.day = todayKey(); }
+    Object.keys(freshDay()).forEach(function (k) { if (s[k] === undefined) s[k] = freshDay()[k]; });
+    return s;
+  }
+  var S = load();
+  var rt = { gps: 'idle', gpsPos: null, fetching: false, fails: 0, lastErr: '', planKey: '', plan: null, sheet: null, tickMin: -1, overrideNow: null };
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sem armazenamento */ } }
+
+  /* ---------- helpers ---------- */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function nowMin() {
+    if (typeof window.__nowMin === 'number') return window.__nowMin;
+    var d = new Date(); return d.getHours() * 60 + d.getMinutes();
+  }
+  var ICON = {
+    now: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 17-7-4-7 4z"/></svg>',
+    plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>',
+    rides: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c3-9 5-12 7-12s2 6 4 6 4-3 7-3"/><path d="M3 21h18"/></svg>',
+    map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+    set: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 00-14-4M4 5v3h3M4 13a8 8 0 0014 4M20 19v-3h-3"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+    go: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+    locate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>',
+    park: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+    skip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+  };
+  function waitClass(w) { return w == null ? 'none' : (w <= 10 ? 'good' : (w <= 25 ? 'warn' : 'bad')); }
+  function durTxt(min) { min = Math.round(min); if (min < 60) return min + ' min'; return Math.floor(min / 60) + 'h' + (min % 60 < 10 ? '0' : '') + (min % 60); }
+
+  /* ---------- contexto de planeamento ---------- */
+  function party() { return { adults: S.set.adults.map(Number), kids: S.set.kids.map(function (k) { return { h: Number(k.h), age: Number(k.age) }; }) }; }
+  function opts() { return { swap: !!S.set.swap, avoidWet: !!S.set.avoidWet, repeats: !!S.set.repeats, speed: Number(S.set.speed) || 3.6 }; }
+  function ridesList() {
+    return C.RIDES.filter(function (r) { return !r.retired && !S.skip[r.id]; }).map(function (r) { return S.calib[r.id] ? Object.assign({}, r, S.calib[r.id]) : r; });
+  }
+  function allRide(id) { var r = C.RIDE_BY_ID[id]; return S.calib[id] ? Object.assign({}, r, S.calib[id]) : r; }
+  function getEnv() {
+    var now = nowMin(), live = {}, L = (S.live && S.live.rides) || {};
+    var fa = S.live && S.live.fetchedAt ? Math.max(0, (Date.now() - S.live.fetchedAt) / 60000) : null;
+    if (fa != null) {
+      Object.keys(L).forEach(function (id) {
+        var x = L[id], age = fa;
+        if (x.updated) { var u = Date.parse(x.updated); if (!isNaN(u)) age = Math.max(age, Math.max(0, (Date.now() - u) / 60000)); }
+        age = Math.min(age, 999);
+        if (x.open === false && age > 90) return;
+        live[id] = { wait: x.wait, open: x.open, age: age };
+      });
+    }
+    Object.keys(S.manual || {}).forEach(function (id) {
+      var m = S.manual[id], a = (Date.now() - m.ts) / 60000;
+      if (a <= 45 && (!live[id] || a <= live[id].age)) live[id] = { wait: m.wait, open: true, age: a };
+    });
+    return { now: now, live: live, dayFactor: C.dayFactor(live, now) };
+  }
+  function curPos() {
+    var g = rt.gpsPos;
+    if (g && Date.now() - g.ts < 5 * 60000 && C.meters(g, C.PARK.entrance) < 1500) return { lat: g.lat, lon: g.lon, src: 'gps' };
+    if (S.pos) return S.pos;
+    return { lat: C.PARK.entrance.lat, lon: C.PARK.entrance.lon, src: 'entrance' };
+  }
+  function baseCtx() {
+    var now = nowMin();
+    return { party: party(), opts: opts(), env: getEnv(), pos: curPos(), t: Math.max(now, C.PARK.open), end: C.parseHM(S.set.end, 1290),
+      done: S.done, rides: ridesList(), mandatory: {}, onlyMandatory: false,
+      brk: { enabled: !!S.set.breakOn, start: C.parseHM(S.set.breakStart, 780), len: Math.max(10, Number(S.set.breakLen) || 40), taken: S.breakTaken }, target: S.target };
+  }
+  function impIds() { return (S.imp.ids || []).filter(function (id) { return !(S.done[id] > 0) && !S.skip[id]; }); }
+  function getPlan() {
+    var ctx = baseCtx();
+    var key = JSON.stringify([ctx.t, Math.round(ctx.pos.lat * 20000), Math.round(ctx.pos.lon * 20000), S.done, S.skip, S.target, S.live && S.live.fetchedAt, S.manual, S.set, S.calib, S.imp, S.breakTaken]);
+    if (rt.planKey === key && rt.plan) return rt.plan;
+    var p;
+    var ids = impIds();
+    if (S.imp.ids.length && S.imp.keep) {
+      p = C.simulateOrder(ctx, ids); p.ctx = ctx;
+    } else {
+      if (S.imp.ids.length) { ids.forEach(function (id) { ctx.mandatory[id] = true; }); ctx.onlyMandatory = !!S.imp.only; }
+      if (S.imp.ids.length && !ids.length && S.imp.only) { p = { steps: [], totalWait: 0, totalWalk: 0, rideCount: 0, endT: ctx.t, elig: {} }; }
+      else p = C.plan(ctx);
+      p.ctx = ctx;
+    }
+    rt.planKey = key; rt.plan = p; return p;
+  }
+  function invalidate() { rt.planKey = ''; rt.plan = null; }
+  function todayMin(id) {
+    var a = S.samples[id]; if (!a || !a.length) return null;
+    var best = null; a.forEach(function (s) { if (!best || s.w < best.w) best = s; });
+    return best;
+  }
+
+  /* ---------- dados ao vivo ---------- */
+  function any(promises) {
+    if (Promise.any) return Promise.any(promises);
+    return new Promise(function (res, rej) {
+      var n = promises.length, errs = [];
+      promises.forEach(function (p) { p.then(res, function (e) { errs.push(e); if (--n === 0) rej(new Error('todas falharam')); }); });
+    });
+  }
+  function tryFetch(url) {
+    return new Promise(function (resolve, reject) {
+      var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var to = setTimeout(function () { if (ctl) ctl.abort(); reject(new Error('timeout')); }, 9000);
+      fetch(url, { cache: 'no-store', signal: ctl ? ctl.signal : undefined }).then(function (r) {
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.text();
+      }).then(function (txt) {
+        clearTimeout(to);
+        var p = C.parseQueueTimes(txt);
+        if (!p) throw new Error('formato');
+        resolve(p);
+      }).catch(function (e) { clearTimeout(to); reject(e); });
+    });
+  }
+  function fetchQT() {
+    var u = C.PARK.qtUrl, enc = encodeURIComponent(u);
+    var routes = (/^https?:/.test(location.protocol) ? ['queue.json?t=' + Date.now()] : []).concat([u, 'https://corsproxy.io/?url=' + enc, 'https://api.allorigins.win/raw?url=' + enc, 'https://api.codetabs.com/v1/proxy?quest=' + u, 'https://thingproxy.freeboard.io/fetch/' + u]);
+    return any(routes.map(tryFetch));
+  }
+  function applyLive(p, src) {
+    var now = nowMin();
+    S.live = { rides: p.rides, fetchedAt: Date.now(), src: src };
+    Object.keys(p.rides).forEach(function (id) {
+      var x = p.rides[id]; if (!x.open) return;
+      var a = S.samples[id] = S.samples[id] || [];
+      if (!a.length || a[a.length - 1].t !== now) a.push({ t: now, w: x.wait });
+      if (a.length > 300) a.shift();
+    });
+    rt.fails = 0; rt.lastErr = '';
+    invalidate(); save();
+  }
+  function refreshLive(userInitiated) {
+    if (rt.fetching) return;
+    rt.fetching = true; renderHeader();
+    var done = function () { rt.fetching = false; render(); };
+    var f;
+    try { f = fetchQT(); } catch (e) { f = Promise.reject(e); }
+    f.then(function (p) { applyLive(p, 'net'); if (userInitiated) toast('Filas atualizadas'); done(); })
+      .catch(function () {
+        rt.fails++; rt.lastErr = 'net';
+        if (userInitiated) toast('Sem ligação às filas. Usa "Colar dados" ou escreve a fila manualmente.');
+        done();
+      });
+  }
+  function dataStatus() {
+    if (rt.fetching) return { cls: '', txt: 'A atualizar', spin: true };
+    if (S.live && S.live.fetchedAt) {
+      var age = Math.round((Date.now() - S.live.fetchedAt) / 60000);
+      var ago = age < 1 ? 'agora' : 'há ' + age + ' min';
+      if (age <= 12) return { cls: 'good', txt: age < 1 ? 'Ao vivo · agora' : 'Ao vivo · ' + ago };
+      return { cls: 'warn', txt: 'Filas ' + ago };
+    }
+    return { cls: rt.fails ? 'bad' : '', txt: rt.fails ? 'Sem filas ao vivo' : 'Filas estimadas' };
+  }
+
+  /* ---------- GPS ---------- */
+  var gpsWatch = null, gpsPoll = null, gpsLow = false;
+  function onFix(p) {
+    var prev = rt.gpsPos;
+    rt.gpsPos = { lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy, ts: Date.now() };
+    rt.gpsErr = 0;
+    rt.gps = C.meters(rt.gpsPos, C.PARK.entrance) > 1500 ? 'far' : 'ok';
+    var moved = prev ? C.meters(prev, rt.gpsPos) : 1e9;
+    var first = !rt._gpsSeen; rt._gpsSeen = true;
+    if (first || moved > 8 || Date.now() - (rt._gpsRender || 0) > 8000) {
+      rt._gpsRender = Date.now();
+      if (first || moved > 8) invalidate();
+      render();
+    }
+  }
+  function onGeoErr(err) {
+    rt.gpsErr = (rt.gpsErr || 0) + 1;
+    rt.gpsMsg = (err && err.message) || '';
+    if (err && err.code === 1) { rt.gps = /secure|origin|seguro/i.test(rt.gpsMsg) || !window.isSecureContext || /^content:/.test(location.protocol) ? 'insecure' : 'denied'; render(); return; }
+    if (!rt.gpsPos) rt.gps = 'wait';
+    if (rt.gpsErr >= 2 && !gpsLow) { gpsLow = true; restartGPS(); }
+    render();
+  }
+  function geoOpts(fresh) { return { enableHighAccuracy: !gpsLow, maximumAge: 0, timeout: fresh ? 15000 : 30000 }; }
+  function pollGPS() {
+    if (!navigator.geolocation || document.visibilityState === 'hidden' || rt.gps === 'denied' || rt.gps === 'insecure') return;
+    if (rt.gpsPos && Date.now() - rt.gpsPos.ts < 7000) return;
+    try { navigator.geolocation.getCurrentPosition(onFix, onGeoErr, geoOpts(true)); } catch (e) {}
+  }
+  function restartGPS() {
+    if (!navigator.geolocation) { rt.gps = 'unavailable'; return; }
+    if (window.isSecureContext === false || /^content:/.test(location.protocol)) { rt.gps = 'insecure'; return; }
+    try { if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch); } catch (e) {}
+    gpsWatch = null;
+    try { gpsWatch = navigator.geolocation.watchPosition(onFix, onGeoErr, geoOpts(false)); } catch (e) { rt.gps = 'unavailable'; return; }
+    if (!rt.gpsPos && rt.gps !== 'denied') rt.gps = 'wait';
+    pollGPS();
+  }
+  function startGPS() {
+    gpsLow = false; rt.gpsErr = 0; if (rt.gps === 'denied') rt.gps = 'wait';
+    restartGPS();
+    if (!gpsPoll) gpsPoll = setInterval(function () {
+      pollGPS();
+      // sem sinal há muito tempo: reinicia o watch
+      if (rt.gpsPos && Date.now() - rt.gpsPos.ts > 45000 && rt.gps !== 'denied') restartGPS();
+    }, 6000);
+  }
+  function farKm() { return rt.gpsPos ? C.meters(rt.gpsPos, C.PARK.entrance) / 1000 : null; }
+  function fmtKm(k) { return k < 10 ? k.toFixed(1).replace('.', ',') + ' km' : Math.round(k) + ' km'; }
+  function gpsAgeTxt() { var a = gpsAge(); return a === null ? '' : (a < 5 ? 'agora' : 'há ' + (a < 90 ? a + ' s' : Math.round(a / 60) + ' min')); }
+  function gpsAge() { return rt.gpsPos ? Math.round((Date.now() - rt.gpsPos.ts) / 1000) : null; }
+  function gpsText() {
+    var ag = gpsAge(), t = ag === null ? '' : (ag < 10 ? ' · agora' : ' · há ' + (ag < 90 ? ag + ' s' : Math.round(ag / 60) + ' min'));
+    switch (rt.gps) {
+      case 'ok': return 'GPS ativo' + (rt.gpsPos && rt.gpsPos.acc ? ' (±' + Math.round(rt.gpsPos.acc) + ' m)' : '') + t;
+      case 'far': return 'GPS a funcionar: estás a ' + fmtKm(farKm()) + ' do parque (±' + Math.round(rt.gpsPos.acc || 0) + ' m, ' + gpsAgeTxt() + '). Uso a entrada como ponto de partida.';
+      case 'wait': return 'A procurar sinal GPS…';
+      case 'insecure': return 'O Android abriu o ficheiro de forma que o Chrome bloqueia o GPS (' + location.protocol.replace(':','') + '). Abre no Chrome escrevendo na barra de endereço: file:///sdcard/Download/walibi-day.html — ou toca no mapa onde estás.';
+      case 'denied': return 'Localização bloqueada. No telemóvel: Definições do site → Localização → Permitir, e toca em "Ativar GPS".';
+      default: return 'GPS indisponível. Escolhe onde estás com um toque.';
+    }
+  }
+  function posLabel() {
+    var p = curPos();
+    if (p.src === 'gps') return 'GPS';
+    if (p.src === 'ride') return p.name || 'última atração';
+    if (p.src === 'manual') return p.name || 'posição escolhida';
+    return 'Entrada';
+  }
+
+  /* ---------- ações ---------- */
+  var toastT = null;
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, 3600);
+  }
+  function setPosRide(id) { var r = allRide(id); S.pos = { lat: r.lat, lon: r.lon, src: 'ride', name: r.short, ts: Date.now() }; }
+  function markDone(id) {
+    S.done[id] = (S.done[id] || 0) + 1; S.log.push({ id: id, t: nowMin() });
+    if (S.target === id) S.target = null;
+    setPosRide(id); invalidate(); save(); render();
+    toast('Feito! A recalcular a rota com as filas atuais…');
+    rt.fails = 0; refreshLive(false);
+    toast('Feito: ' + C.RIDE_BY_ID[id].short);
+  }
+  function undoDone(id) {
+    if (!S.done[id]) return;
+    S.done[id]--; if (!S.done[id]) delete S.done[id];
+    for (var i = S.log.length - 1; i >= 0; i--) { if (S.log[i].id === id) { S.log.splice(i, 1); break; } }
+    invalidate(); save(); render();
+  }
+  function setTarget(id) {
+    S.target = S.target === id ? null : id; invalidate(); save(); render();
+    toast(S.target ? 'A caminho: ' + C.RIDE_BY_ID[id].short : 'Plano livre outra vez');
+  }
+
+  /* ---------- UI: peças ---------- */
+  function eligChip(e) {
+    var cls = e.mode === 'all' ? 'good' : (e.mode === 'none' ? 'bad' : 'warn');
+    return '<span class="chip plain ' + cls + '">' + esc(e.label) + '</span>';
+  }
+  function waitBadge(w, open) {
+    if (open === false) return '<div class="badge none"><b>–</b><small>fechada</small></div>';
+    return '<div class="badge ' + waitClass(w) + '"><b class="num">' + (w == null ? '–' : w) + '</b><small>min</small></div>';
+  }
+  function waitFor(r, env, tArr) { return C.predictWait(r, tArr, env); }
+
+  /* ---------- ecrã: Agora ---------- */
+  function viewNow() {
+    var p = getPlan(), ctx = p.ctx, env = ctx.env;
+    var html = mapGps();
+    var now = nowMin();
+    if (now < C.PARK.open) html += '<div class="card small"><b>O parque abre às 10:00.</b> O plano começa a essa hora na entrada.</div>';
+    else if (now >= C.PARK.close) html += '<div class="card small"><b>O parque já fechou.</b> Volta a abrir este separador amanhã de manhã.</div>';
+    html += '<div data-imap="small"></div>';
+    var s = p.steps[0];
+    if (!s) {
+      html += '<div class="card"><h2 class="sec-title">Dia completo</h2><p class="muted" style="margin-top:6px">Já não cabe mais nenhuma atração até às ' + C.fmtTime(ctx.end) + '. Podes mudar a hora de fim em Ajustes ou repetir favoritas.</p></div>';
+      return html + nowBest(p, null) + topCard(p);
+    }
+    if (s.type === 'break') {
+      html += '<div class="card next"><div class="eyebrow">Agora</div><h1>Pausa para comer</h1><p class="muted">Das ' + C.fmtTime(s.start) + ' às ' + C.fmtTime(s.end) + '. Depois o plano continua daqui.</p>' +
+        '<div class="btns"><button class="btn primary" data-action="breakDone">' + ICON.check + ' Já comemos</button><button class="btn" data-action="skipBreak">Sem pausa hoje</button></div></div>';
+      return html + nowTimeline(p, 1) + nowBest(p, null) + topCard(p);
+    }
+    var r = allRide(s.id), e = p.elig[r.id] || C.eligibility(r, ctx.party, ctx.opts);
+    var adv = C.advise(r, ctx, todayMin(r.id));
+    var locked = S.target === r.id;
+    var wcls = waitClass(s.wait);
+    var Lr = env.live[r.id];
+    var filaLabel = Lr && Lr.age <= 12 && Math.abs(s.wait - Lr.wait) <= 3 ? 'Fila agora' : (Lr && Lr.age > 12 ? 'Fila há ' + Math.round(Lr.age) + 'm' : 'Fila prev.');
+    html += '<section class="card next" aria-label="Próxima atração">' +
+      '<div class="row"><div class="eyebrow grow">' + (locked ? 'A caminho' : 'Próxima') + ' · ' + esc(r.zone) + '</div>' + (s.repeat ? '<span class="chip plain acc">repetir</span>' : '') + '</div>' +
+      '<h1>' + esc(r.name) + '</h1>' +
+      '<div class="stats"><div class="stat"><small>A pé</small><b class="num">' + s.walk + '<i>min</i></b></div>' +
+      '<div class="stat ' + wcls + '"><small>' + filaLabel + '</small><b class="num">' + s.wait + '<i>min</i></b></div>' +
+      '<div class="stat"><small>Sobes às</small><b class="num">' + C.fmtTime(s.start) + '</b></div></div>' +
+      '<div class="row wrap">' + eligChip(e) + '<span class="small muted grow">' + esc(e.detail || '') + '</span></div>';
+    if (adv.level !== 'go') {
+      html += '<div class="advice ' + adv.level + '" role="status"><b class="t">' + ({ defer: 'Melhor ir a outra primeiro', switch: 'Recomendo trocar', wait: 'Vale a pena esperar', closed: 'Fechada' }[adv.level] || '') + '</b><span>' + esc(adv.text) + '</span>';
+      var alts = (adv.alts || []).slice(0, 2);
+      if (alts.length) {
+        html += '<div class="btns">' + alts.map(function (a) {
+          return '<button class="btn sm" data-action="goto" data-id="' + a.r.id + '">' + ICON.go + ' ' + esc(a.r.short) + ' · ' + a.wait + ' min</button>';
+        }).join('') + '</div>';
+      }
+      html += '</div>';
+    }
+    html += '<div class="btns"><button class="btn primary" data-action="done" data-id="' + r.id + '">' + ICON.check + ' Já fiz</button>' +
+      '<button class="btn" data-action="target" data-id="' + r.id + '">' + ICON.pin + ' ' + (locked ? 'Soltar' : 'Vou para lá') + '</button>' +
+      '<button class="btn ghost full sm" data-action="skip" data-id="' + r.id + '">' + ICON.skip + ' Não quero esta hoje</button></div></section>';
+    return html + betterCard(p, r, adv) + nowTimeline(p, 1) + nowBest(p, r.id) + topCard(p);
+  }
+  function betterCard(p, r, adv) {
+    if (adv.level !== 'go') return '';
+    var rk = C.rankNow(Object.assign({}, p.ctx, { mandatory: {} }), []);
+    if (!rk.length || rk[0].r.id === r.id) return '';
+    var cur = rk.filter(function (x) { return x.r.id === r.id; })[0], b = rk[0];
+    if (cur && b.eff < cur.eff * 1.25) return '';
+    return '<section class="card advice switch" role="status"><b class="t">Há uma opção melhor agora</b><span>' + esc(b.r.name) + ': ' + b.walk + ' min a pé, fila ~' + b.wait + ' min' + (b.r.must ? ' (imperdível)' : '') + (cur ? ', contra ' + esc(r.short) + ' com ' + cur.walk + ' min a pé e fila ~' + cur.wait + ' min.' : '.') + '</span><div class="btns"><button class="btn sm" data-action="goto" data-id="' + b.r.id + '">' + ICON.go + ' Ir para ' + esc(b.r.short) + '</button></div></section>';
+  }
+  function nowTimeline(p, from) {
+    var rest = p.steps.slice(from, from + 3);
+    if (!rest.length) return '';
+    return '<section class="card"><div class="row"><h2 class="sec-title grow">Depois</h2><button class="chip plain" data-action="tab" data-tab="plan">Ver plano</button></div><div class="list" style="margin-top:6px">' +
+      rest.map(function (s) {
+        if (s.type === 'break') return '<div class="item"><div class="time num">' + C.fmtTime(s.start) + '</div><div class="grow"><div class="nm">Pausa para comer</div><div class="sub">' + (s.end - s.start) + ' min</div></div></div>';
+        return '<button class="item" data-action="ride" data-id="' + s.id + '"><div class="time num">' + C.fmtTime(s.start) + '</div><div class="grow"><div class="nm">' + esc(C.RIDE_BY_ID[s.id].short) + '</div><div class="sub">' + s.walk + ' min a pé · fila ~' + s.wait + ' min</div></div></button>';
+      }).join('') + '</div></section>';
+  }
+  function topCard(p) {
+    var plan = {}; p.steps.forEach(function (st) { if (st.type === 'ride' && !plan[st.id]) plan[st.id] = st; });
+    var L = (p.ctx.env && p.ctx.env.live) || {};
+    var done = 0, rows = C.FAME.map(function (id, i) {
+      var r = allRide(id), e = p.elig[id] || C.eligibility(r, p.ctx.party, p.ctx.opts), d = S.done[id] > 0, st = plan[id], tag, cls = '';
+      if (d) { done++; tag = 'feita ✓'; cls = 'muted'; }
+      else if (S.skip[id]) tag = 'saltada';
+      else if (L[id] && L[id].open === false) tag = 'fechada agora';
+      else if (st) tag = 'no plano às ' + C.fmtTime(st.start) + ' · fila ~' + st.wait + ' min';
+      else tag = e.mode === 'none' ? 'altura não permite' : 'já não cabe no plano';
+      return '<button class="item" data-action="ride" data-id="' + id + '"><div class="time num">' + (i + 1) + '</div><div class="grow"><div class="nm' + (d ? ' muted' : '') + '">' + esc(r.short || r.name) + (i < 6 ? ' <span class="chip plain acc">imperdível</span>' : '') + '</div><div class="sub">' + esc(tag) + (e.mode === 'adults' ? ' · só adultos' : '') + '</div></div></button>';
+    });
+    return '<section class="card"><div class="row"><h2 class="sec-title grow">Mais famosas e procuradas</h2><span class="chip plain">' + Math.min(done, 6) + '/6</span></div><div class="list" style="margin-top:6px">' + rows.join('') + '</div></section>';
+  }
+  function nowBest(p, excludeId) {
+    var ctx = p.ctx;
+    var rk = C.rankNow(Object.assign({}, ctx, { mandatory: {} }), excludeId ? [excludeId] : []).slice(0, 4);
+    if (!rk.length) return '';
+    return '<section class="card"><h2 class="sec-title">Melhores opções agora</h2><p class="small muted">Valor / (a pé + fila + atração), a partir de onde estás.</p><div class="list" style="margin-top:6px">' +
+      rk.map(function (a) {
+        return '<button class="item" data-action="ride" data-id="' + a.r.id + '">' + waitBadge(a.wait) + '<div class="grow"><div class="nm">' + esc(a.r.short) + '</div><div class="sub">' + a.walk + ' min a pé · ' + esc(a.e.label) + '</div></div>' + (a.r.must ? '<span class="chip plain acc">imperdível</span>' : '') + '</button>';
+      }).join('') + '</div></section>';
+  }
+
+  /* ---------- ecrã: Plano ---------- */
+  function viewPlan() {
+    var p = getPlan(), ctx = p.ctx;
+    var html = '<div class="sumrow">' +
+      '<div class="stat"><small>Atrações</small><b class="num">' + p.rideCount + '</b></div>' +
+      '<div class="stat"><small>Em fila</small><b class="num">' + durTxt(p.totalWait) + '</b></div>' +
+      '<div class="stat"><small>Termina</small><b class="num">' + C.fmtTime(p.endT) + '</b></div></div>';
+    html += '<div class="btns"><button class="btn" data-action="replan">' + ICON.refresh + ' Replanear</button><button class="btn" data-action="importSheet">' + ICON.plan + ' ' + (S.imp.ids.length ? 'Minha lista' : 'Importar lista') + '</button></div>';
+    if (S.imp.ids.length) {
+      html += '<div class="card small"><div class="row wrap"><span class="chip plain acc">Lista ativa: ' + S.imp.ids.length + ' atrações' + (S.imp.keep ? ' · pela tua ordem' : ' · ordem otimizada') + '</span><button class="chip plain" data-action="clearImport">Desativar</button></div></div>';
+    }
+    if (p.skipped && p.skipped.length) {
+      html += '<div class="card small"><b>Não incluídas</b><ul style="margin:6px 0 0;padding-left:18px">' + p.skipped.map(function (x) { return '<li>' + esc((C.RIDE_BY_ID[x.id] || { name: x.id }).name) + ': ' + esc(x.why) + '</li>'; }).join('') + '</ul></div>';
+    }
+    if (!p.steps.length) html += '<div class="card muted">Sem atrações para planear até às ' + C.fmtTime(ctx.end) + '.</div>';
+    else html += '<section class="card"><div class="list">' + p.steps.map(function (s) {
+      if (s.type === 'break') return '<div class="item"><div class="time num">' + C.fmtTime(s.start) + '<small>' + C.fmtTime(s.end) + '</small></div><div class="grow breakrow">Pausa para comer</div></div>';
+      var r = C.RIDE_BY_ID[s.id], cls = waitClass(s.wait);
+      return '<div class="item"><div class="time num">' + C.fmtTime(s.arrive) + '<small>' + C.fmtTime(s.end) + '</small></div>' +
+        '<button class="grow" data-action="ride" data-id="' + s.id + '" style="background:none;border:0;text-align:left;padding:0;color:inherit;min-width:0"><div class="nm" style="font-weight:700;overflow-wrap:anywhere">' + esc(r.short) + (s.repeat ? ' <span class="chip plain acc">repetir</span>' : '') + '</div>' +
+        '<div class="sub small muted">' + s.walk + ' min a pé · <b class="w-' + cls + '" style="color:var(--' + (cls === 'none' ? 'muted' : cls) + ')">fila ~' + s.wait + ' min</b>' + (s.mode === 'adults' ? ' · só adultos à vez' : '') + (s.late ? ' · depois do fecho' : '') + '</div></button>' +
+        '<button class="tick" aria-label="Marcar ' + esc(r.short) + ' como feita" data-action="done" data-id="' + s.id + '">' + ICON.check + '</button></div>';
+    }).join('') + '</div></section>';
+    var doneIds = S.log.slice().reverse();
+    if (doneIds.length) {
+      html += '<details class="card"><summary>Já feitas (' + doneIds.length + ')</summary><div class="list">' + doneIds.map(function (l) {
+        return '<div class="item is-done"><div class="time num">' + C.fmtTime(l.t) + '</div><div class="grow nm">' + esc(C.RIDE_BY_ID[l.id].short) + '</div><button class="btn sm" data-action="undo" data-id="' + l.id + '">Desfazer</button></div>';
+      }).join('') + '</div></details>';
+    }
+    return html;
+  }
+
+  /* ---------- ecrã: Atrações ---------- */
+  function rideRows() {
+    var ctx = baseCtx(), env = ctx.env;
+    return C.RIDES.filter(function (r) { return !r.retired; }).map(function (r0) {
+      var r = allRide(r0.id), e = C.eligibility(r, ctx.party, ctx.opts);
+      var L = env.live[r.id], walk = C.walkMin(ctx.pos, r, ctx.opts.speed);
+      var open = !(L && L.open === false);
+      var wait = open ? C.predictWait(r, ctx.t + walk, env) : null;
+      return { r: r, e: e, walk: walk, open: open, wait: wait, posted: L && open ? L.wait : null, done: S.done[r.id] || 0, skipped: !!S.skip[r.id], live: !!L };
+    });
+  }
+  function viewRides() {
+    var rows = rideRows(), f = S.ui.filter, sort = S.ui.sort;
+    rows = rows.filter(function (x) {
+      if (f === 'can') return x.e.mode === 'all' || x.e.mode === 'partial';
+      if (f === 'short') return x.open && x.wait != null && x.wait <= 15;
+      if (f === 'done') return x.done > 0 || x.skipped;
+      return true;
+    });
+    rows.sort(function (a, b) {
+      if (sort === 'wait') return (a.wait == null ? 999 : a.wait) - (b.wait == null ? 999 : b.wait);
+      if (sort === 'dist') return a.walk - b.walk;
+      if (sort === 'name') return a.r.name.localeCompare(b.r.name);
+      var ea = a.e.mode === 'none' ? 0 : a.r.value / Math.max(5, a.walk + (a.wait || 30) + a.r.dur), eb = b.e.mode === 'none' ? 0 : b.r.value / Math.max(5, b.walk + (b.wait || 30) + b.r.dur);
+      return eb - ea;
+    });
+    function seg(name, cur, items) { return '<div class="seg" role="group" aria-label="' + name + '">' + items.map(function (i) { return '<button data-action="' + (name === 'Filtro' ? 'filter' : 'sort') + '" data-v="' + i[0] + '" aria-pressed="' + (cur === i[0]) + '">' + i[1] + '</button>'; }).join('') + '</div>'; }
+    var html = seg('Filtro', f, [['all', 'Todas'], ['can', 'Posso com o miúdo'], ['short', 'Fila curta'], ['done', 'Feitas']]) +
+      seg('Ordem', sort, [['best', 'Melhor agora'], ['wait', 'Menor fila'], ['dist', 'Mais perto'], ['name', 'Nome']]);
+    if (!rows.length) html += '<div class="card muted">Nada neste filtro.</div>';
+    else html += '<section class="card"><div class="list">' + rows.map(function (x) {
+      var isDone = x.done > 0;
+      return '<div class="item ' + (isDone || x.skipped ? 'is-done' : '') + '"><button class="item" style="border:0;padding:0" data-action="ride" data-id="' + x.r.id + '">' + waitBadge(x.wait, x.open) +
+        '<div class="grow"><div class="nm">' + esc(x.r.name) + '</div><div class="sub">' + esc(x.r.zone) + ' · ' + x.walk + ' min a pé' + (x.live ? '' : ' · estimativa') + '</div><div style="margin-top:4px">' + eligChip(x.e) + (x.skipped ? ' <span class="chip plain">saltada</span>' : '') + '</div></div></button>' +
+        '<button class="tick ' + (isDone ? 'on' : '') + '" aria-label="' + (isDone ? 'Desfazer ' : 'Marcar como feita: ') + esc(x.r.short) + '" data-action="' + (isDone ? 'undo' : 'done') + '" data-id="' + x.r.id + '">' + ICON.check + '</button></div>';
+    }).join('') + '</div></section>';
+    var kidH = S.set.kids.length ? Math.min.apply(null, S.set.kids.map(function (k) { return Number(k.h); })) : null;
+    html += '<details class="card"><summary>Outras atrações (sem fila medida)</summary><div class="list">' + C.OTHERS.map(function (o) {
+      var ok = '';
+      if (kidH != null) {
+        var st = C.personStatus({ alone: o.h.alone, acc: o.h.acc == null ? null : o.h.acc, max: o.h.max || null }, kidH, true);
+        ok = st === 'ok' ? 'Miúdo pode' : (st === 'escort' ? 'Miúdo com adulto' : 'Miúdo não pode');
+      }
+      return '<div class="item"><div class="grow"><div class="nm">' + esc(o.name) + '</div><div class="sub">Mín. ' + o.h.alone + ' cm' + (o.h.acc ? ' · ' + o.h.acc + ' cm acompanhado' : '') + (o.h.max ? ' · máx. ' + o.h.max + ' cm' : '') + '</div></div><span class="chip plain ' + (ok === 'Miúdo não pode' ? 'warn' : 'good') + '">' + ok + '</span></div>';
+    }).join('') + '</div><p class="small muted" style="margin-top:8px">Alturas da tabela oficial do parque. O Loup-Garou aparece como "última época" no site oficial e não entra no plano.</p></details>';
+    return html;
+  }
+
+  /* ---------- ecrã: Mapa ---------- */
+  function mapGps() {
+    var ag = gpsAge();
+    var ok = rt.gps === 'ok' && ag !== null && ag < 20;
+    var farOk = rt.gps === 'far' && ag !== null && ag < 20, cls = (ok || farOk) ? 'good' : (rt.gps === 'far' ? 'warn' : 'bad');
+    var txt = ok ? 'GPS a receber dados (±' + Math.round(rt.gpsPos.acc || 0) + ' m, ' + (ag < 5 ? 'agora' : 'há ' + ag + ' s') + ')' :
+      (rt.gps === 'far' ? 'GPS a funcionar: estás a ' + fmtKm(farKm()) + ' do parque (±' + Math.round(rt.gpsPos.acc || 0) + ' m, ' + gpsAgeTxt() + '). No mapa uso a entrada.' :
+      (rt.gps === 'insecure' ? 'O Android abriu o ficheiro de forma que o Chrome bloqueia o GPS (' + location.protocol.replace(':','') + '). Abre no Chrome escrevendo na barra de endereço: file:///sdcard/Download/walibi-day.html — ou toca no mapa onde estás.' : rt.gps === 'denied' ? 'Localização bloqueada no Chrome: toca no cadeado/ícone à esquerda do endereço → Permissões → Localização → Permitir' + (rt.gpsMsg ? ' (' + rt.gpsMsg + ')' : '') : 'Sem dados do GPS: a posição mostrada pode estar errada'));
+    return '<div class="gpsbar ' + cls + '" role="status"><span id="gpsline" class="grow">' + esc(txt) + '</span>' + ((ok || farOk) ? '' : (rt.gps === 'insecure' || /^content:/.test(location.protocol) ? '<button class="btn sm" data-action="toFile">Abrir com GPS</button><button class="btn sm" data-action="copyFile">Copiar endereço</button>' : '') + '<button class="btn sm" data-action="startGps">Ativar GPS</button><button class="btn sm" data-action="posSheet">Onde estou?</button>') + '</div>';
+  }
+  function mapNext(p, nx, pos) {
+    if (!nx) {
+      var b = p.steps[0];
+      return '<section class="card next"><div class="eyebrow">Agora</div><h1>' + (b && b.type === 'break' ? 'Pausa para comer' : 'Sem mais atrações no plano') + '</h1></section>';
+    }
+    var r = allRide(nx.id), dist = Math.round(C.meters(pos, r)), locked = S.target === r.id, e = p.elig[r.id] || C.eligibility(r, p.ctx.party, p.ctx.opts);
+    return '<section class="card next" aria-label="Próxima atração" style="padding:12px 14px"><div class="row"><div class="eyebrow grow">' + (locked ? 'A caminho' : 'Próxima') + '</div>' + eligChip(e) + '</div>' +
+      '<h1 style="margin:2px 0 4px;font-size:26px">' + esc(r.name) + '</h1>' +
+      '<p class="small" style="margin:0 0 8px"><b class="num">' + nx.walk + ' min</b> a pé (' + (dist >= 1000 ? (dist / 1000).toFixed(1) + ' km' : dist + ' m') + ') · fila <b class="num ' + waitClass(nx.wait) + '">' + nx.wait + ' min</b></p>' +
+      '<div class="btns"><button class="btn primary" data-action="done" data-id="' + r.id + '">' + ICON.check + ' Já fiz</button><button class="btn" data-action="skip" data-id="' + r.id + '">' + ICON.skip + ' Saltar</button></div></section>';
+  }
+  function mapAlts(p, nx) {
+    var rk = C.rankNow(Object.assign({}, p.ctx, { mandatory: {} }), nx ? [nx.id] : []).slice(0, 3);
+    if (!rk.length) return '';
+    return '<section class="card"><h2 class="sec-title">Alternativas perto</h2><div class="list" style="margin-top:6px">' + rk.map(function (a) {
+      return '<div class="item">' + waitBadge(a.wait) + '<button class="grow" data-action="ride" data-id="' + a.r.id + '" style="background:none;border:0;text-align:left;padding:0;color:inherit;min-width:0"><div class="nm">' + esc(a.r.short) + (a.r.must ? ' <span class="chip plain acc">imperdível</span>' : '') + '</div><div class="sub">' + a.walk + ' min a pé · fila ~' + a.wait + ' min</div></button><button class="btn sm" data-action="gotoClose" data-id="' + a.r.id + '">Ir</button></div>';
+    }).join('') + '</div></section>';
+  }
+  /* ---------- mapa interativo (satélite Esri + atrações + rota + GPS) ---------- */
+  var MAP = { root: null, tilesEl: null, svg: null, tiles: {}, w: 0, h: 0, ptrs: {}, tap: null, moved: false, touching: false, raf: 0, pruneT: null, pinch: 0 };
+  rt.mv = { lat: C.PARK.entrance.lat, lon: C.PARK.entrance.lon, z: 17, auto: true };
+  function mx(lon, z) { return (lon + 180) / 360 * 256 * Math.pow(2, z); }
+  function my(lat, z) { var r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 256 * Math.pow(2, z); }
+  function unx(x, z) { return x / (256 * Math.pow(2, z)) * 360 - 180; }
+  function uny(y, z) { var n = Math.PI * (1 - 2 * y / (256 * Math.pow(2, z))); return Math.atan(Math.sinh(n)) * 180 / Math.PI; }
+  function clampZ(z) { return Math.max(3, Math.min(19.5, z)); }
+  function mapRoot() {
+    if (MAP.root) return MAP.root;
+    var d = document.createElement('div'); d.className = 'imap'; d.setAttribute('role', 'group'); d.setAttribute('aria-label', 'Mapa interativo do parque');
+    d.innerHTML = '<div class="imap-tiles"></div><svg class="imap-svg" aria-hidden="true"></svg>' +
+      '<div class="imap-ctl">' +
+      '<button type="button" data-action="recalc" aria-label="Recalcular rota e atualizar filas">' + ICON.refresh + '</button>' +
+      '<button type="button" data-action="mapLocate" aria-label="Centrar em mim e na próxima atração">' + ICON.locate + '</button>' +
+      '<button type="button" data-action="mapPark" aria-label="Ver o parque todo">' + ICON.park + '</button>' +
+      '<button type="button" data-action="mapZoom" data-d="1" aria-label="Aproximar">+</button>' +
+      '<button type="button" data-action="mapZoom" data-d="-1" aria-label="Afastar">&minus;</button></div>' +
+      '<div class="imap-attr">Imagem: Esri</div>';
+    MAP.root = d; MAP.tilesEl = d.children[0]; MAP.svg = d.children[1];
+    var pt = function (e) { var b = d.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; };
+    d.addEventListener('pointerdown', function (e) {
+      if (e.target.closest && e.target.closest('button')) return;
+      var p = pt(e); MAP.ptrs[e.pointerId] = { x: p.x, y: p.y }; MAP.downPt = { x: p.x, y: p.y };
+      var n = Object.keys(MAP.ptrs).length;
+      if (n === 1) { var t = e.target.closest && e.target.closest('[data-id]'); MAP.tap = t ? t.getAttribute('data-id') : null; MAP.moved = false; }
+      else { MAP.tap = null; MAP.pinch = 0; }
+      MAP.touching = true;
+      try { d.setPointerCapture(e.pointerId); } catch (x) {}
+    });
+    d.addEventListener('pointermove', function (e) {
+      var o = MAP.ptrs[e.pointerId]; if (!o) return;
+      var p = pt(e), ids = Object.keys(MAP.ptrs), v = rt.mv;
+      if (ids.length >= 2) {
+        var a = MAP.ptrs[ids[0]], b = MAP.ptrs[ids[1]];
+        var oa = { x: a.x, y: a.y }, ob = { x: b.x, y: b.y };
+        if (String(e.pointerId) === ids[0]) { a.x = p.x; a.y = p.y; } else { b.x = p.x; b.y = p.y; }
+        var d0 = Math.hypot(oa.x - ob.x, oa.y - ob.y), d1 = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d0 > 10 && d1 > 10) {
+          var mxp = (a.x + b.x) / 2, myp = (a.y + b.y) / 2, pmx = (oa.x + ob.x) / 2, pmy = (oa.y + ob.y) / 2;
+          mapPanBy(mxp - pmx, myp - pmy); mapZoomAt(mxp, myp, v.z + Math.log(d1 / d0) / Math.LN2);
+        }
+        MAP.moved = true; v.auto = false; return;
+      }
+      var dx = p.x - o.x, dy = p.y - o.y; o.x = p.x; o.y = p.y;
+      if (!MAP.moved && Math.hypot(dx, dy) < 3) return;
+      MAP.moved = true; v.auto = false; mapPanBy(dx, dy);
+    });
+    var up = function (e) {
+      if (!MAP.ptrs[e.pointerId]) return;
+      delete MAP.ptrs[e.pointerId];
+      if (!Object.keys(MAP.ptrs).length) {
+        MAP.touching = false;
+        if (!MAP.moved && MAP.tap && e.type === 'pointerup') { var id = MAP.tap; MAP.tap = null; sheetRide(id); }
+        else if (!MAP.moved && !MAP.tap && e.type === 'pointerup' && MAP.downPt) {
+          var v = rt.mv, q = MAP.downPt, lon = unx(mx(v.lon, v.z) + q.x - MAP.w / 2, v.z), lat = uny(my(v.lat, v.z) + q.y - MAP.h / 2, v.z);
+          if (!mapGpsFresh() || rt.gps === 'far') { S.pos = { lat: lat, lon: lon, src: 'manual', name: 'ponto marcado no mapa', ts: Date.now() }; invalidate(); save(); render(); toast('Posição marcada aqui. Rota recalculada.'); }
+        }
+        MAP.tap = null;
+        if (rt.renderLater) { rt.renderLater = false; render(); }
+      }
+    };
+    d.addEventListener('pointerup', up); d.addEventListener('pointercancel', up);
+    d.addEventListener('wheel', function (e) { e.preventDefault(); var p = pt(e); rt.mv.auto = false; mapZoomAt(p.x, p.y, rt.mv.z - e.deltaY / 300); }, { passive: false });
+    d.addEventListener('dblclick', function (e) { var p = pt(e); rt.mv.auto = false; mapZoomAt(p.x, p.y, rt.mv.z + 1); });
+    return d;
+  }
+  function mapPanBy(dx, dy) {
+    var v = rt.mv; v.lon = unx(mx(v.lon, v.z) - dx, v.z); v.lat = uny(my(v.lat, v.z) - dy, v.z); mapDraw();
+  }
+  function mapZoomAt(sx, sy, nz) {
+    var v = rt.mv; nz = clampZ(nz);
+    var cx = mx(v.lon, v.z), cy = my(v.lat, v.z), wx = cx + (sx - MAP.w / 2), wy = cy + (sy - MAP.h / 2);
+    var glon = unx(wx, v.z), glat = uny(wy, v.z);
+    v.z = nz;
+    var nwx = mx(glon, nz), nwy = my(glat, nz);
+    v.lon = unx(nwx - (sx - MAP.w / 2), nz); v.lat = uny(nwy - (sy - MAP.h / 2), nz); mapDraw();
+  }
+  function mapFitPts(pts, maxZ) {
+    var v = rt.mv, w = MAP.w || 340, h = MAP.h || 300, pad = 46;
+    if (!pts.length) return;
+    var z = Math.min(maxZ || 18.2, 19), minx, maxx, miny, maxy;
+    for (; z > 3; z -= 0.25) {
+      minx = 1e12; maxx = -1e12; miny = 1e12; maxy = -1e12;
+      pts.forEach(function (q) { var x = mx(q.lon, z), y = my(q.lat, z); minx = Math.min(minx, x); maxx = Math.max(maxx, x); miny = Math.min(miny, y); maxy = Math.max(maxy, y); });
+      if (maxx - minx <= w - 2 * pad && maxy - miny <= h - 2 * pad) break;
+    }
+    v.z = clampZ(z); v.lon = unx((minx + maxx) / 2, z); v.lat = uny((miny + maxy) / 2, z);
+  }
+  function mapNextRide() { var p = getPlan(); for (var i = 0; i < p.steps.length; i++) if (p.steps[i].type === 'ride') return p.steps[i]; return null; }
+  function mapGpsFresh() { return rt.gpsPos && Date.now() - rt.gpsPos.ts < 5 * 60000; }
+  function mapAutoFit() {
+    var pos = curPos(), pts = [], far = rt.gps === 'far' && mapGpsFresh();
+    if (far) { pts.push(rt.gpsPos, C.PARK.entrance); mapFitPts(pts, 18); return; }
+    pts.push(pos, C.PARK.entrance); C.RIDES.forEach(function (r) { if (!r.retired) pts.push(allRide(r.id)); });
+    mapFitPts(pts, 17.4);
+  }
+  function mapFitPark() {
+    var pts = [C.PARK.entrance]; C.RIDES.forEach(function (r) { if (!r.retired) pts.push(allRide(r.id)); });
+    mapFitPts(pts, 17.5);
+  }
+  function mapDraw() { if (!MAP.raf) MAP.raf = requestAnimationFrame(function () { MAP.raf = 0; mapPaint(); }); }
+  function mapUpdate() {
+    if (!MAP.root || !MAP.root.isConnected) return;
+    MAP.w = MAP.root.clientWidth; MAP.h = MAP.root.clientHeight;
+    if (!MAP.w || !MAP.h) { setTimeout(mapUpdate, 80); return; }
+    if (rt.mv.auto) mapAutoFit();
+    mapPaint();
+  }
+  function mapPaint() {
+    if (!MAP.root || !MAP.root.isConnected) return;
+    var v = rt.mv, w = MAP.w, h = MAP.h; if (!w || !h) return;
+    var sat = S.ui.sat !== false;
+    MAP.root.classList.toggle('plain', !sat);
+    var cxz = mx(v.lon, v.z), cyz = my(v.lat, v.z);
+    /* tiles */
+    var zi = Math.max(3, Math.min(19, Math.round(v.z))), s = Math.pow(2, v.z - zi), ts = 256 * s, n = Math.pow(2, zi);
+    MAP.tilesEl.style.display = sat ? '' : 'none';
+    if (sat) {
+      var tx0 = Math.floor((cxz - w / 2) / ts), tx1 = Math.floor((cxz + w / 2) / ts), ty0 = Math.floor((cyz - h / 2) / ts), ty1 = Math.floor((cyz + h / 2) / ts);
+      if ((tx1 - tx0 + 1) * (ty1 - ty0 + 1) <= 60) {
+        for (var ty = Math.max(0, ty0); ty <= Math.min(n - 1, ty1); ty++) for (var tx = Math.max(0, tx0); tx <= Math.min(n - 1, tx1); tx++) {
+          var key = zi + '/' + tx + '/' + ty;
+          if (!MAP.tiles[key]) {
+            var im = document.createElement('img'); im.className = 'imap-tile'; im.alt = ''; im.draggable = false; im.decoding = 'async';
+            im.onerror = function () { this.style.visibility = 'hidden'; MAP.tileErr = (MAP.tileErr || 0) + 1; if (MAP.tileErr >= 4 && !MAP.tileOk && S.ui.sat !== false) { S.ui.sat = false; save(); mapPaint(); toast('Satélite indisponível aqui: mapa esquemático'); } };
+            im.onload = function () { MAP.tileOk = true; };
+            im.src = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + zi + '/' + ty + '/' + tx;
+            im.style.zIndex = zi; MAP.tilesEl.appendChild(im); MAP.tiles[key] = { el: im, z: zi, x: tx, y: ty };
+          }
+        }
+      }
+      Object.keys(MAP.tiles).forEach(function (k) {
+        var t = MAP.tiles[k], st = Math.pow(2, v.z - t.z), sz = 256 * st, l = t.x * sz - cxz + w / 2, tp = t.y * sz - cyz + h / 2;
+        if (l > w + 40 || tp > h + 40 || l + sz < -40 || tp + sz < -40) { t.el.remove(); delete MAP.tiles[k]; return; }
+        t.el.style.left = l.toFixed(1) + 'px'; t.el.style.top = tp.toFixed(1) + 'px'; t.el.style.width = (sz + 0.6).toFixed(1) + 'px'; t.el.style.height = (sz + 0.6).toFixed(1) + 'px';
+      });
+      clearTimeout(MAP.pruneT);
+      MAP.pruneT = setTimeout(function () { Object.keys(MAP.tiles).forEach(function (k) { if (MAP.tiles[k].z !== zi) { MAP.tiles[k].el.remove(); delete MAP.tiles[k]; } }); }, 700);
+    }
+    /* overlay */
+    var P = function (q) { return { x: mx(q.lon, v.z) - cxz + w / 2, y: my(q.lat, v.z) - cyz + h / 2 }; };
+    var mpp = 40075016.686 * Math.cos(v.lat * Math.PI / 180) / (256 * Math.pow(2, v.z));
+    var pos = curPos(), me = P(pos), p = getPlan(), rows = rideRows(), nx = mapNextRide();
+    var svg = '', order = {}, k = 0, route = [me];
+    p.steps.forEach(function (st) { if (st.type !== 'ride' || k >= 6) return; k++; if (!order[st.id]) order[st.id] = k; route.push(P(allRide(st.id))); });
+    if (route.length > 1) svg += '<polyline points="' + route.map(function (q) { return q.x.toFixed(1) + ',' + q.y.toFixed(1); }).join(' ') + '" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="5" stroke-dasharray="1 9" stroke-linecap="round"/><polyline points="' + route.map(function (q) { return q.x.toFixed(1) + ',' + q.y.toFixed(1); }).join(' ') + '" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-dasharray="6 5" stroke-linecap="round" stroke-linejoin="round"/>';
+    if (nx) { var nq = P(allRide(nx.id)); svg += '<line x1="' + me.x.toFixed(1) + '" y1="' + me.y.toFixed(1) + '" x2="' + nq.x.toFixed(1) + '" y2="' + nq.y.toFixed(1) + '" stroke="#fff" stroke-width="7" stroke-linecap="round"/><line x1="' + me.x.toFixed(1) + '" y1="' + me.y.toFixed(1) + '" x2="' + nq.x.toFixed(1) + '" y2="' + nq.y.toFixed(1) + '" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>'; }
+    var cmap = { good: 'var(--good)', warn: 'var(--warn)', bad: 'var(--bad)', none: 'var(--muted)' };
+    var boxes = [{ x1: w - 58, x2: w, y1: 0, y2: 232 }, { x1: 0, x2: 130, y1: h - 18, y2: h }], hit = function (a, b) { return !(a.x2 < b.x1 || a.x1 > b.x2 || a.y2 < b.y1 || a.y1 > b.y2); };
+    var dots = [];
+    var place = function (q, label) {
+      var wd = label.length * 6 + 6, c = [['start', q.x + 14, q.y + 4], ['end', q.x - 14, q.y + 4], ['middle', q.x, q.y - 15], ['middle', q.x, q.y + 25]], pick = null;
+      for (var i = 0; i < c.length && !pick; i++) {
+        var x1 = c[i][0] === 'start' ? c[i][1] : (c[i][0] === 'end' ? c[i][1] - wd : c[i][1] - wd / 2), b = { x1: x1, x2: x1 + wd, y1: c[i][2] - 10, y2: c[i][2] + 4 };
+        if (b.x1 < 2 || b.x2 > w - 2 || b.y1 < 2 || b.y2 > h - 2) continue;
+        if (boxes.some(function (o) { return hit(b, o); }) || dots.some(function (dd) { return (Math.abs(dd.x - q.x) > 1 || Math.abs(dd.y - q.y) > 1) && hit(b, { x1: dd.x - 12, x2: dd.x + 12, y1: dd.y - 12, y2: dd.y + 12 }); })) continue;
+        pick = { c: c[i], b: b };
+      }
+      if (!pick) return null; boxes.push(pick.b); return pick.c;
+    };
+    rows.forEach(function (x) { var q = P(x.r); if (q.x > -30 && q.x < w + 30 && q.y > -30 && q.y < h + 30) dots.push({ x: q.x, y: q.y }); });
+    var ent = P(C.PARK.entrance);
+    dots.push(ent); var nxId = nx && nx.id;
+    var order2 = rows.slice().sort(function (a, b) { return (b.r.id === nxId ? 2 : (b.r.must ? 1 : 0)) - (a.r.id === nxId ? 2 : (a.r.must ? 1 : 0)); });
+    var lbl = '', mk = '';
+    var ec = place(ent, 'Entrada');
+    mk += '<rect x="' + (ent.x - 6).toFixed(1) + '" y="' + (ent.y - 6).toFixed(1) + '" width="12" height="12" rx="3" fill="var(--ink)" stroke="#fff" stroke-width="2"/>';
+    if (ec) lbl += '<text x="' + ec[1].toFixed(1) + '" y="' + ec[2].toFixed(1) + '" text-anchor="' + ec[0] + '">Entrada</text>';
+    order2.forEach(function (x) {
+      var q = P(x.r); if (q.x < -30 || q.x > w + 30 || q.y < -30 || q.y > h + 30) return;
+      var cls = x.open ? waitClass(x.wait) : 'none', col = x.done || x.skipped ? 'var(--muted)' : cmap[cls], isN = x.r.id === nxId;
+      var label = (x.r.short.length > 14 ? x.r.short.split(' ')[0] : x.r.short) + (x.open && x.wait != null && !x.done ? ' ' + x.wait : '');
+      var c = place(q, label);
+      mk += '<g data-id="' + x.r.id + '" style="cursor:pointer"><circle cx="' + q.x.toFixed(1) + '" cy="' + q.y.toFixed(1) + '" r="22" fill="transparent"/>' +
+        (isN ? '<circle cx="' + q.x.toFixed(1) + '" cy="' + q.y.toFixed(1) + '" r="17" fill="none" stroke="var(--accent)" stroke-width="3.5"/>' : '') +
+        '<circle cx="' + q.x.toFixed(1) + '" cy="' + q.y.toFixed(1) + '" r="10.5" fill="' + col + '" stroke="#fff" stroke-width="2.4"/>' +
+        '<text x="' + q.x.toFixed(1) + '" y="' + (q.y + 4).toFixed(1) + '" text-anchor="middle" style="fill:#fff;stroke:none;font-size:11px">' + (x.done ? '✓' : (order[x.r.id] || '')) + '</text></g>';
+      if (c) lbl += '<text x="' + c[1].toFixed(1) + '" y="' + c[2].toFixed(1) + '" text-anchor="' + c[0] + '">' + esc(label) + '</text>';
+    });
+    svg += mk + lbl;
+    /* GPS real (também quando estás longe do parque) e posição escolhida */
+    var g = mapGpsFresh() ? rt.gpsPos : null;
+    if (g) {
+      var gq = P(g), rr = Math.max(11, Math.min(120, (g.acc || 20) / mpp));
+      svg += '<g><circle cx="' + gq.x.toFixed(1) + '" cy="' + gq.y.toFixed(1) + '" r="' + rr.toFixed(1) + '" fill="var(--accent)" fill-opacity=".18" stroke="var(--accent)" stroke-opacity=".5"/><circle class="pulse" cx="' + gq.x.toFixed(1) + '" cy="' + gq.y.toFixed(1) + '" r="11" fill="var(--accent)" opacity=".45"/><circle cx="' + gq.x.toFixed(1) + '" cy="' + gq.y.toFixed(1) + '" r="7.5" fill="var(--accent)" stroke="#fff" stroke-width="3"/></g>';
+      var farTxt = rt.gps === 'far' ? 'Tu · ' + fmtKm(farKm()) : 'Tu';
+      svg += '<text x="' + gq.x.toFixed(1) + '" y="' + (gq.y - 18).toFixed(1) + '" text-anchor="middle">' + farTxt + '</text>';
+    }
+    if (!g || pos.src !== 'gps') {
+      svg += '<g><circle cx="' + me.x.toFixed(1) + '" cy="' + me.y.toFixed(1) + '" r="8" fill="#fff" stroke="var(--accent)" stroke-width="3.5"/></g>';
+      if (!g) svg += '<text x="' + me.x.toFixed(1) + '" y="' + (me.y + 24).toFixed(1) + '" text-anchor="middle">Tu (' + esc(posLabel()) + ')</text>';
+    }
+    MAP.svg.setAttribute('width', w); MAP.svg.setAttribute('height', h); MAP.svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    MAP.svg.innerHTML = svg;
+  }
+  function mountMap() {
+    var ph = $('view').querySelector('[data-imap]');
+    if (!ph) return;
+    var r = mapRoot(); r.classList.toggle('big', ph.getAttribute('data-imap') === 'big');
+    ph.parentNode.replaceChild(r, ph);
+    mapUpdate();
+  }
+
+  function viewMap() {
+    var p = getPlan(), nx = mapNextRide(), pos = curPos();
+    return mapGps() + '<div data-imap="big"></div>' +
+      '<div class="legend"><span><i style="background:var(--accent)"></i>Tu</span><span><i style="background:var(--good)"></i>até 10 min</span><span><i style="background:var(--warn)"></i>11 a 25</span><span><i style="background:var(--bad)"></i>mais de 25</span><span><i style="background:var(--muted)"></i>feita ou fechada</span></div>' +
+      mapNext(p, nx, pos) + mapAlts(p, nx) +
+      '<div class="btns"><button class="btn sm" data-action="satToggle">' + (S.ui.sat !== false ? 'Mapa esquemático' : 'Ver satélite') + '</button><a class="btn sm" href="https://www.walibi.be/en/explore-the-park/attractions" target="_blank" rel="noopener">Site oficial do parque</a></div>' +
+      '<div class="card small"><b>Posições aproximadas.</b> Se uma atração estiver fora do sítio no satélite, abre-a junto a ela com GPS ativo e usa "Estou aqui".</div>';
+  }
+
+  function viewSettings() {
+    var s = S.set, html = '';
+    html += '<section class="card"><h2 class="sec-title">Família</h2><p class="small muted">Alturas em cm. O plano só inclui o que o grupo pode fazer.</p>';
+    html += '<div style="margin-top:6px"><div class="eyebrow">Adultos</div>' + s.adults.map(function (h, i) {
+      return '<div class="person"><label class="grow" for="ad' + i + '">Adulto ' + (i + 1) + '</label><input id="ad' + i + '" type="number" inputmode="numeric" min="120" max="230" value="' + h + '" data-set="adult" data-i="' + i + '" aria-label="Altura do adulto ' + (i + 1) + ' em cm">' +
+        (s.adults.length > 1 ? '<button class="btn sm" data-action="rmAdult" data-i="' + i + '" aria-label="Remover adulto ' + (i + 1) + '">Tirar</button>' : '') + '</div>';
+    }).join('') + '<button class="btn sm" style="margin-top:6px" data-action="addAdult">+ Adulto</button></div>';
+    html += '<div style="margin-top:14px"><div class="eyebrow">Crianças</div>' + s.kids.map(function (k, i) {
+      return '<div class="kid"><div class="l1"><b>Criança ' + (i + 1) + '</b><button class="btn sm" data-action="rmKid" data-i="' + i + '" aria-label="Remover criança ' + (i + 1) + '">Tirar</button></div>' +
+        '<div class="l2"><label for="ka' + i + '">Idade</label><input id="ka' + i + '" type="number" inputmode="numeric" min="1" max="17" value="' + k.age + '" data-set="kidAge" data-i="' + i + '" style="width:72px">' +
+        '<label for="kh' + i + '">Altura (cm)</label><input id="kh' + i + '" type="number" inputmode="numeric" min="60" max="200" value="' + k.h + '" data-set="kidH" data-i="' + i + '" style="width:84px"></div></div>';
+    }).join('') + '<button class="btn sm" style="margin-top:6px" data-action="addKid">+ Criança</button></div>';
+    var ctx = baseCtx(), can = 0, tot = 0;
+    C.RIDES.forEach(function (r) { if (r.retired) return; tot++; var e = C.eligibility(r, ctx.party, ctx.opts); if (e.mode === 'all' || e.mode === 'partial') can++; });
+    html += '<p class="small" style="margin-top:10px"><b>Com estas alturas, toda a família pode fazer ' + can + ' de ' + tot + ' atrações com fila medida.</b></p></section>';
+
+    html += '<section class="card"><h2 class="sec-title">O dia</h2>' +
+      fieldTime('end', 'Quero acabar às', 'O parque fecha às 22:00 (nocturne)', s.end) +
+      fieldSwitch('breakOn', 'Pausa para comer', 'O plano reserva este tempo', s.breakOn) +
+      (s.breakOn ? fieldTime('breakStart', 'A partir das', '', s.breakStart) + fieldNum('breakLen', 'Duração (min)', '', s.breakLen, 10, 120) : '') + '</section>';
+
+    html += '<section class="card"><h2 class="sec-title">Preferências</h2>' +
+      fieldSwitch('swap', 'Adultos à vez nas que o miúdo não pode', 'Um adulto sobe, o outro fica com o miúdo, e trocam. Confirma com o staff se há troca sem nova fila.', s.swap) +
+      fieldSwitch('avoidWet', 'Evitar atrações que molham', 'Pulsar, Radja River, Flash Back. Está frio em novembro.', s.avoidWet) +
+      fieldSwitch('repeats', 'Permitir repetir as melhores', 'Só atrações de topo e nunca seguidas', s.repeats) +
+      '<div class="field"><label for="speed" class="lab">Passo a pé<span class="hint">Com criança pequena e multidão</span></label><select id="speed" data-set="speed"><option value="3"' + (+s.speed === 3 ? ' selected' : '') + '>Lento</option><option value="3.6"' + (+s.speed === 3.6 ? ' selected' : '') + '>Normal</option><option value="4.5"' + (+s.speed === 4.5 ? ' selected' : '') + '>Rápido</option></select></div></section>';
+
+    var ds = dataStatus();
+    html += '<section class="card"><h2 class="sec-title">Filas e posição</h2><p class="small" style="margin-top:6px"><b>' + esc(ds.txt) + '.</b> ' + (S.live ? '' : 'Sem dados ao vivo, o plano usa médias históricas do queue-times.') + '</p>' +
+      '<div class="btns" style="margin-top:8px"><button class="btn" data-action="refresh">' + ICON.refresh + ' Atualizar filas</button><button class="btn" data-action="dataSheet">Colar dados</button></div>' +
+      '<p class="small muted" style="margin-top:12px"><span id="gpsline">' + esc(gpsText()) + '</span> Posição usada: <b>' + esc(posLabel()) + '</b>.</p>' +
+      '<div class="btns" style="margin-top:8px"><button class="btn" data-action="posSheet">' + ICON.pin + ' Onde estou?</button><button class="btn" data-action="startGps">Ativar GPS</button></div></section>';
+
+    html += '<section class="card"><h2 class="sec-title">Dia</h2><div class="btns" style="margin-top:8px"><button class="btn" data-action="resetDay">Recomeçar o dia</button><button class="btn" data-action="resetCalib">Repor posições</button></div>' +
+      '<p class="small muted" style="margin-top:12px">Filas: Powered by <a href="https://queue-times.com/" target="_blank" rel="noopener" style="color:var(--accent)">Queue-Times.com</a>. Alturas: tabela oficial em <a href="https://www.walibi.be/en/explore-the-park/attractions" target="_blank" rel="noopener" style="color:var(--accent)">walibi.be</a>. Esperas típicas: médias do queue-times em dias de Halloween e nocturnes. Posições no mapa: estimativas. Esta app não é oficial.</p></section>';
+    return html;
+  }
+  function fieldTime(k, lab, hint, v) {
+    var from = k === 'end' ? 840 : 660, to = k === 'end' ? 1320 : 930, opts = [], seen = false;
+    for (var m = from; m <= to; m += 15) { var t = C.fmtTime(m); if (t === v) seen = true; opts.push(t); }
+    if (!seen) opts.push(v);
+    return '<div class="field"><label for="f_' + k + '" class="lab">' + lab + (hint ? '<span class="hint">' + hint + '</span>' : '') + '</label><select id="f_' + k + '" data-set="' + k + '">' +
+      opts.map(function (t) { return '<option value="' + t + '"' + (t === v ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div>';
+  }
+  function fieldNum(k, lab, hint, v, mn, mx) { return '<div class="field"><label for="f_' + k + '" class="lab">' + lab + '</label><input id="f_' + k + '" type="number" inputmode="numeric" min="' + mn + '" max="' + mx + '" value="' + esc(v) + '" data-set="' + k + '"></div>'; }
+  function fieldSwitch(k, lab, hint, v) { return '<div class="field"><label for="f_' + k + '" class="lab">' + lab + (hint ? '<span class="hint">' + hint + '</span>' : '') + '</label><span class="switch"><input id="f_' + k + '" type="checkbox" role="switch" data-set="' + k + '"' + (v ? ' checked' : '') + '><span></span></span></div>'; }
+
+  /* ---------- folhas ---------- */
+  function openSheet(title, bodyHtml, kind) {
+    rt.sheet = kind || 'x';
+    $('sheetTitle').textContent = title; $('sheetBody').innerHTML = bodyHtml; $('sheet').hidden = false;
+    var b = $('sheet').querySelector('.x'); if (b) b.focus();
+  }
+  function closeSheet() { rt.sheet = null; $('sheet').hidden = true; }
+  function sheetRide(id) {
+    var ctx = baseCtx(), env = ctx.env, r = allRide(id), e = C.eligibility(r, ctx.party, ctx.opts);
+    var L = env.live[id], walk = C.walkMin(ctx.pos, r, ctx.opts.speed), wait = C.predictWait(r, ctx.t + walk, env);
+    var H = r.h, hs = 'Mín. ' + H.alone + ' cm sozinho' + (H.acc ? ' · ' + H.acc + ' cm com adulto' : '') + (H.max ? ' · máx. ' + H.max + ' cm' : '');
+    var isDone = !!S.done[id], man = S.manual[id];
+    var bars = '', mx = 1, vals = [];
+    for (var h = 10; h <= 21; h++) { var v = Math.round(C.histWait(r, h * 60 + 30) * env.dayFactor); vals.push(v); mx = Math.max(mx, v); }
+    if (L && L.open !== false) mx = Math.max(mx, L.wait);
+    var nowH = Math.floor(nowMin() / 60);
+    vals.forEach(function (v, i) {
+      var h = 10 + i, bh = Math.max(2, Math.round(v / mx * 56)), cur = h === nowH;
+      bars += '<rect x="' + (i * 26 + 4) + '" y="' + (66 - bh) + '" width="18" height="' + bh + '" rx="3" fill="' + (cur ? 'var(--accent)' : 'var(--line)') + '"/>' +
+        '<text x="' + (i * 26 + 13) + '" y="' + (62 - bh) + '" text-anchor="middle" style="font-size:9px;fill:var(--muted);stroke:none">' + v + '</text>' +
+        (h % 2 === 0 ? '<text x="' + (i * 26 + 13) + '" y="80" text-anchor="middle" style="font-size:10px;fill:var(--muted);stroke:none">' + h + 'h</text>' : '');
+    });
+    var body = '<div class="row wrap">' + eligChip(e) + '<span class="small muted grow">' + esc(e.detail || hs) + '</span></div>' +
+      '<div class="stats"><div class="stat"><small>A pé</small><b class="num">' + walk + '<i>min</i></b></div><div class="stat ' + waitClass(wait) + '"><small>' + (L ? 'Fila agora' : 'Fila prevista') + '</small><b class="num">' + (L && L.open === false ? '–' : (L ? L.wait : wait)) + '<i>min</i></b></div><div class="stat"><small>Duração</small><b class="num">' + r.dur + '<i>min</i></b></div></div>' +
+      (L && L.open === false ? '<div class="advice closed"><b class="t">Fechada neste momento</b></div>' : '') +
+      '<div><div class="eyebrow">Fila típica por hora</div><svg viewBox="0 0 316 86" width="100%" role="img" aria-label="Fila típica por hora do dia" class="bars">' + bars + '</svg><p class="small muted">Médias do queue-times, ajustadas ao que se vê hoje. A hora atual está destacada.</p></div>' +
+      '<p class="small muted">' + esc(r.zone) + (r.wet ? ' · molha' : '') + (e.detail ? '. ' + esc(hs) + '.' : '') + '</p>';
+    var g = rt.gpsPos && Date.now() - rt.gpsPos.ts < 120000 && C.meters(rt.gpsPos, C.PARK.entrance) < 1500;
+    body += '<div class="btns"><button class="btn primary" data-action="' + (isDone ? 'undo' : 'done') + '" data-id="' + id + '">' + ICON.check + ' ' + (isDone ? 'Desfazer feita' : 'Já fiz') + '</button>' +
+      '<button class="btn" data-action="gotoClose" data-id="' + id + '">' + ICON.pin + ' ' + (S.target === id ? 'Soltar' : 'Ir para aqui') + '</button>' +
+      '<button class="btn" data-action="' + (S.skip[id] ? 'unskip' : 'skip') + '" data-id="' + id + '">' + (S.skip[id] ? 'Voltar a incluir' : 'Saltar hoje') + '</button>' +
+      '<button class="btn" data-action="calib" data-id="' + id + '"' + (g ? '' : ' disabled') + '>Estou aqui</button></div>' +
+      (g ? '' : '<p class="small muted">"Estou aqui" corrige a posição desta atração e precisa de GPS ativo junto a ela.</p>');
+    body += '<div class="field" style="border:0"><span class="lab">Fila lida no painel<span class="hint">' + (man ? 'Valor manual: ' + man.wait + ' min' : 'Usa se o ecrã da atração mostrar outro valor') + '</span></span><span class="row"><button class="btn sm" data-action="mw" data-id="' + id + '" data-d="-5" aria-label="menos 5 minutos">−5</button><button class="btn sm" data-action="mw" data-id="' + id + '" data-d="5" aria-label="mais 5 minutos">+5</button>' + (man ? '<button class="btn sm" data-action="mwClear" data-id="' + id + '">Limpar</button>' : '') + '</span></div>';
+    openSheet(r.name, body, 'ride:' + id);
+  }
+  function sheetData() {
+    var ds = dataStatus();
+    openSheet('Dados das filas',
+      '<p><b>' + esc(ds.txt) + '.</b> A app tenta ligar-se ao queue-times sozinha. Se este ecrã bloquear o acesso, usa o caminho manual.</p>' +
+      '<div class="btns"><button class="btn primary full" data-action="refresh">' + ICON.refresh + ' Tentar de novo</button></div>' +
+      '<div class="card" style="background:var(--surface2);border:0"><b>Colar dados (funciona sempre)</b><ol class="small" style="padding-left:18px;margin:8px 0">' +
+      '<li>Toca em <a href="https://queue-times.com/parks/14/queue_times.json" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700">Abrir filas</a> (abre noutro separador).</li><li>Seleciona todo o texto, copia e volta aqui.</li><li>Cola na caixa e toca em Usar.</li></ol>' +
+      '<label for="pasteBox" class="small muted">Texto copiado</label><textarea id="pasteBox" placeholder="{&quot;lands&quot;:[…"></textarea><div id="pasteMsg" class="small" role="status" style="min-height:20px"></div>' +
+      '<div class="btns"><button class="btn primary full" data-action="pasteApply">Usar estes dados</button></div></div>' +
+      '<p class="small muted">Também podes escrever a fila de cada atração: abre-a na lista e usa −5 / +5 com o valor do painel à entrada.</p>', 'data');
+  }
+  function sheetPos() {
+    var list = C.RIDES.filter(function (r) { return !r.retired; });
+    openSheet('Onde estás?',
+      '<p class="small muted">' + esc(gpsText()) + '</p><div class="btns"><button class="btn primary full" data-action="startGps">' + ICON.pin + ' Usar o GPS</button><button class="btn full" data-action="posEntrance">Estou na entrada</button></div>' +
+      '<div class="eyebrow">Ou escolhe a atração mais perto</div><div class="list">' + list.map(function (r) {
+        return '<button class="item" data-action="posRide" data-id="' + r.id + '"><div class="grow"><div class="nm">' + esc(r.name) + '</div><div class="sub">' + esc(r.zone) + '</div></div></button>';
+      }).join('') + '</div>', 'pos');
+  }
+  function sheetImport() {
+    var cur = S.imp.ids.map(function (id) { return C.RIDE_BY_ID[id].name; }).join('\n');
+    openSheet('Minha lista de atrações',
+      '<p class="small muted">Escreve ou cola uma atração por linha (ou separadas por vírgulas). Reconheço nomes como "tiki waka" ou "mecalodon".</p>' +
+      '<label for="impBox" class="small muted">Lista</label><textarea id="impBox" placeholder="Kondaa&#10;Mecalodon&#10;Tiki-Waka">' + esc(cur) + '</textarea><div id="impMsg" class="small" role="status" style="min-height:20px"></div>' +
+      '<div class="field"><label for="impKeep" class="lab">Seguir a minha ordem<span class="hint">Desligado: otimizo a ordem para menos espera</span></label><span class="switch"><input id="impKeep" type="checkbox" role="switch"' + (S.imp.keep ? ' checked' : '') + '><span></span></span></div>' +
+      '<div class="field"><label for="impOnly" class="lab">Só estas<span class="hint">Desligado: junto outras para aproveitar o tempo</span></label><span class="switch"><input id="impOnly" type="checkbox" role="switch"' + (S.imp.only ? ' checked' : '') + '><span></span></span></div>' +
+      '<div class="btns"><button class="btn primary" data-action="impApply">Usar lista</button><button class="btn" data-action="clearImport">Limpar</button></div>', 'imp');
+  }
+
+  /* ---------- render ---------- */
+  function renderHeader() {
+    var now = nowMin();
+    $('clock').textContent = C.fmtTime(now);
+    var st = now < C.PARK.open ? 'Abre às 10:00' : (now >= C.PARK.close ? 'Parque fechado' : 'Aberto até 22:00');
+    $('parkstate').textContent = st;
+    var ds = dataStatus(), el = $('datachip');
+    el.className = 'chip ' + ds.cls + (ds.spin ? ' spin' : '');
+    el.innerHTML = ICON.refresh + '<span>' + esc(ds.txt) + '</span>';
+  }
+  function render() {
+    if (MAP.touching) { rt.renderLater = true; return; }
+    renderHeader();
+    var tab = S.ui.tab, v = $('view'), html = '';
+    var top = v.scrollTop;
+    try {
+      html = tab === 'plan' ? viewPlan() : tab === 'rides' ? viewRides() : tab === 'map' ? viewMap() : tab === 'set' ? viewSettings() : viewNow();
+    } catch (err) {
+      html = '<div class="card"><b>Algo falhou ao desenhar este ecrã.</b><p class="small muted">' + esc(err && err.message) + '</p><div class="btns"><button class="btn" data-action="resetDay">Recomeçar o dia</button></div></div>';
+      if (window.console) console.error(err);
+    }
+    v.innerHTML = html; v.scrollTop = top; mountMap();
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === tab)); });
+  }
+
+  /* ---------- eventos ---------- */
+  document.addEventListener('click', function (ev) {
+    var el = ev.target.closest('[data-action]'); if (!el) return;
+    var a = el.getAttribute('data-action'), id = el.getAttribute('data-id');
+    if (/^(done|skip|target|goto|gotoClose|recalc|replan|undo)$/.test(a)) rt.mv.auto = true;
+    switch (a) {
+      case 'tab': S.ui.tab = el.getAttribute('data-tab'); save(); render(); $('view').scrollTop = 0; break;
+      case 'done': markDone(id); if (rt.sheet) closeSheet(); break;
+      case 'undo': undoDone(id); if (rt.sheet) closeSheet(); break;
+      case 'skip': S.skip[id] = true; if (S.target === id) S.target = null; invalidate(); save(); if (rt.sheet) closeSheet(); render(); toast('Retirada do plano de hoje'); break;
+      case 'unskip': delete S.skip[id]; invalidate(); save(); closeSheet(); render(); break;
+      case 'target': setTarget(id); break;
+      case 'gotoClose': setTarget(id); closeSheet(); break;
+      case 'goto': S.target = id; invalidate(); save(); render(); toast('A caminho: ' + C.RIDE_BY_ID[id].short); break;
+      case 'ride': sheetRide(id); break;
+      case 'closeSheet': closeSheet(); break;
+      case 'replan': invalidate(); S.target = null; save(); render(); toast('Plano recalculado'); break;
+      case 'refresh': refreshLive(true); break;
+      case 'dataSheet': case 'datachip': sheetData(); break;
+      case 'posSheet': sheetPos(); break;
+      case 'posEntrance': S.pos = null; invalidate(); save(); closeSheet(); render(); toast('Partida na entrada'); break;
+      case 'posRide': setPosRide(id); S.pos.src = 'manual'; invalidate(); save(); closeSheet(); render(); toast('Estás perto de ' + C.RIDE_BY_ID[id].short); break;
+      case 'satToggle': S.ui.sat = S.ui.sat === false; save(); render(); break;
+      case 'mapZoom': rt.mv.auto = false; mapZoomAt(MAP.w / 2, MAP.h / 2, rt.mv.z + Number(el.getAttribute('data-d'))); break;
+      case 'mapLocate': rt.mv.auto = true; mapUpdate(); if (!mapGpsFresh()) toast('Sem GPS: centrei na posição escolhida'); break;
+      case 'mapPark': rt.mv.auto = false; mapFitPark(); mapPaint(); break;
+      case 'toFile': try { location.href = 'file:///storage/emulated/0/Download/'; } catch (e) {} setTimeout(function () { toast('O Chrome bloqueou. Usa "Copiar endereço" e cola na barra do Chrome.'); }, 1500); break;
+      case 'copyFile': (function () { var t = 'file:///storage/emulated/0/Download/'; var ok = function () { toast('Copiado! Cola na barra do Chrome e toca no walibi-day mais recente.'); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, function () { prompt('Copia este endereço:', t); });
+        else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) {} ta.remove(); } })(); break;
+      case 'recalc': rt.fails = 0; invalidate(); render(); refreshLive(true); toast('Rota recalculada'); break;
+      case 'startGps': startGPS(); toast('A pedir localização…'); setTimeout(function () { if (rt.sheet === 'pos') sheetPos(); render(); }, 1200); break;
+      case 'filter': S.ui.filter = el.getAttribute('data-v'); save(); render(); break;
+      case 'sort': S.ui.sort = el.getAttribute('data-v'); save(); render(); break;
+      case 'breakDone': S.breakTaken = true; invalidate(); save(); render(); break;
+      case 'skipBreak': S.breakTaken = true; invalidate(); save(); render(); toast('Sem pausa hoje'); break;
+      case 'importSheet': sheetImport(); break;
+      case 'clearImport': S.imp = { ids: [], keep: false, only: true }; invalidate(); save(); closeSheet(); render(); break;
+      case 'impApply': {
+        var res = C.parseList($('impBox').value);
+        if (!res.ids.length) { $('impMsg').textContent = 'Não reconheci nenhuma atração. Escreve nomes como Kondaa ou Tiki-Waka, um por linha.'; break; }
+        S.imp = { ids: res.ids, keep: $('impKeep').checked, only: $('impOnly').checked }; invalidate(); save(); closeSheet(); S.ui.tab = 'plan'; render();
+        toast(res.ids.length + ' atrações na lista' + (res.unknown.length ? ' · ' + res.unknown.length + ' não reconhecidas: ' + res.unknown.slice(0, 2).join(', ') : ''));
+        break;
+      }
+      case 'pasteApply': {
+        var p = C.parseQueueTimes($('pasteBox').value);
+        if (!p) { $('pasteMsg').textContent = 'Não reconheci estes dados. Abre a ligação, seleciona tudo, copia e cola de novo.'; $('pasteMsg').style.color = 'var(--bad)'; break; }
+        applyLive(p, 'paste'); closeSheet(); render(); toast('Filas atualizadas (' + p.matched + ' atrações)');
+        break;
+      }
+      case 'mw': {
+        var cur = (S.manual[id] && S.manual[id].wait != null) ? S.manual[id].wait : (function () { var L = getEnv().live[id]; return L ? L.wait : Math.round(C.histWait(C.RIDE_BY_ID[id], nowMin())); })();
+        S.manual[id] = { wait: Math.max(0, cur + Number(el.getAttribute('data-d'))), ts: Date.now() }; invalidate(); save(); render(); sheetRide(id); break;
+      }
+      case 'mwClear': delete S.manual[id]; invalidate(); save(); render(); sheetRide(id); break;
+      case 'calib': if (rt.gpsPos) { S.calib[id] = { lat: rt.gpsPos.lat, lon: rt.gpsPos.lon }; invalidate(); save(); closeSheet(); render(); toast('Posição de ' + C.RIDE_BY_ID[id].short + ' corrigida'); } break;
+      case 'addAdult': S.set.adults.push(170); invalidate(); save(); render(); break;
+      case 'rmAdult': S.set.adults.splice(+el.getAttribute('data-i'), 1); invalidate(); save(); render(); break;
+      case 'addKid': S.set.kids.push({ age: 8, h: 122 }); invalidate(); save(); render(); break;
+      case 'rmKid': S.set.kids.splice(+el.getAttribute('data-i'), 1); invalidate(); save(); render(); break;
+      case 'resetDay': Object.assign(S, freshDay()); S.day = todayKey(); invalidate(); save(); render(); toast('Dia recomeçado'); break;
+      case 'resetCalib': S.calib = {}; invalidate(); save(); render(); toast('Posições repostas'); break;
+    }
+  });
+  document.addEventListener('change', function (ev) {
+    var el = ev.target; var k = el.getAttribute && el.getAttribute('data-set'); if (!k) return;
+    var i = +el.getAttribute('data-i'), v = el.type === 'checkbox' ? el.checked : el.value;
+    var num = function (x, lo, hi, d) { x = parseInt(x, 10); return isNaN(x) ? d : Math.min(hi, Math.max(lo, x)); };
+    if (k === 'adult') S.set.adults[i] = num(v, 120, 230, 172);
+    else if (k === 'kidAge') S.set.kids[i].age = num(v, 1, 17, 8);
+    else if (k === 'kidH') S.set.kids[i].h = num(v, 60, 200, 122);
+    else if (k === 'breakLen') S.set.breakLen = num(v, 10, 120, 40);
+    else if (k === 'speed') S.set.speed = Number(v);
+    else if (k === 'end' || k === 'breakStart') { if (/^\d{1,2}:\d{2}$/.test(v)) S.set[k] = v; }
+    else S.set[k] = v;
+    invalidate(); save(); render();
+  });
+  $('datachip').addEventListener('click', function () { sheetData(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && rt.sheet) closeSheet(); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') { if (rt.gps !== 'denied') restartGPS(); render(); if (rt.fails < 3 && (!S.live || Date.now() - S.live.fetchedAt > 180000)) refreshLive(false); }
+  });
+
+  /* ---------- arranque ---------- */
+  function tick() {
+    var m = nowMin();
+    if (!rt.sheet) { var gb = document.querySelector('.gpsbar'); if (gb) gb.outerHTML = mapGps(); else { var gp = $('gpsline'); if (gp) gp.textContent = gpsText(); } }
+    if (!rt.sheet && MAP.root && MAP.root.isConnected) mapUpdate();
+    if (m !== rt.tickMin) { rt.tickMin = m; if (!rt.sheet) { invalidate(); render(); } else renderHeader(); }
+  }
+  window.__walibi = { S: S, rt: rt, C: C, render: render, getPlan: getPlan, refreshLive: refreshLive, applyLive: applyLive, startGPS: startGPS };
+  render();
+  startGPS();
+  refreshLive(false);
+  setInterval(tick, 5000);
+  setInterval(function () { if (document.visibilityState === 'visible' && rt.fails < 3) refreshLive(false); }, 180000);
+})();
+
+</script>
+</body>
+</html>
